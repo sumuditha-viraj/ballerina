@@ -19,6 +19,7 @@ package org.ballerinalang.util.parser.antlr4;
 
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -27,6 +28,7 @@ import org.ballerinalang.model.NodeLocation;
 import org.ballerinalang.model.WhiteSpaceDescriptor;
 import org.ballerinalang.model.builder.BLangModelBuilder;
 import org.ballerinalang.model.types.SimpleTypeName;
+import org.ballerinalang.model.values.Position;
 import org.ballerinalang.util.parser.BallerinaListener;
 import org.ballerinalang.util.parser.BallerinaParser;
 import org.ballerinalang.util.parser.BallerinaParser.ActionDefinitionContext;
@@ -2100,7 +2102,14 @@ public class BLangAntlr4Listener implements BallerinaListener {
     protected NodeLocation getCurrentLocation(ParserRuleContext ctx) {
         String fileName = ctx.getStart().getInputStream().getSourceName();
         int lineNo = ctx.getStart().getLine();
-        return new NodeLocation(packageDirPath, fileName, lineNo);
+        Position startPosition = new Position(ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine());
+        Position stopPosition = new Position();
+        Token stop = ctx.getStop();
+        if (stop != null) {
+            stopPosition.setLineNumber(stop.getLine());
+            stopPosition.setColumn(stop.getCharPositionInLine());
+        }
+        return new NodeLocation(packageDirPath, fileName, lineNo, startPosition, stopPosition);
     }
 
     protected int getNoOfArgumentsInList(ParserRuleContext ctx) {
