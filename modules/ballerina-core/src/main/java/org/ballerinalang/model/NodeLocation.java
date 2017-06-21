@@ -16,6 +16,8 @@
  */
 package org.ballerinalang.model;
 
+import org.ballerinalang.model.values.Position;
+
 /**
  * {@code NodeLocation} represents the location of a particular language construct in the source file.
  *
@@ -25,6 +27,8 @@ public class NodeLocation {
     private String pkgDirPath;
     private String fileName;
     private int lineNumber = -1;
+    private Position startPosition;
+    private Position stopPosition;
 
     public NodeLocation(String fileName, int lineNumber) {
         this.fileName = fileName;
@@ -34,6 +38,13 @@ public class NodeLocation {
     public NodeLocation(String pkgDirPath, String fileName, int lineNumber) {
         this(fileName, lineNumber);
         this.pkgDirPath = pkgDirPath;
+    }
+
+    public NodeLocation(String pkgDirPath, String fileName, int lineNumber, Position startPosition,
+                        Position stopPosition) {
+        this(pkgDirPath, fileName, lineNumber);
+        this.startPosition = startPosition;
+        this.stopPosition = stopPosition;
     }
 
     public String getPackageDirPath() {
@@ -46,6 +57,22 @@ public class NodeLocation {
 
     public int getLineNumber() {
         return this.lineNumber;
+    }
+
+    public Position getStartPosition() {
+        return startPosition;
+    }
+
+    public void setStartPosition(Position startPosition) {
+        this.startPosition = startPosition;
+    }
+
+    public Position getStopPosition() {
+        return stopPosition;
+    }
+
+    public void setStopPosition(Position stopPosition) {
+        this.stopPosition = stopPosition;
     }
 
     public boolean equals(Object obj) {
