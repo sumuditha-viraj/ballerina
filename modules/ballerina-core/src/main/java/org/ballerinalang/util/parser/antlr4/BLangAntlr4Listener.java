@@ -233,7 +233,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
             return;
         }
 
-        modelBuilder.startResourceDef();
+        modelBuilder.startResourceDef(getCurrentLocation(ctx));
     }
 
     @Override
@@ -267,7 +267,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
             return;
         }
 
-        modelBuilder.endCallableUnitBody();
+        modelBuilder.endCallableUnitBody(getCurrentLocation(ctx));
     }
 
     @Override
@@ -519,7 +519,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
     @Override
     public void exitTypeMapperBody(BallerinaParser.TypeMapperBodyContext ctx) {
         if (ctx.exception == null) {
-            modelBuilder.endCallableUnitBody();
+            modelBuilder.endCallableUnitBody(getCurrentLocation(ctx));
         }
     }
 
@@ -555,7 +555,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
     @Override
     public void exitWorkerDeclaration(BallerinaParser.WorkerDeclarationContext ctx) {
         if (ctx.exception == null && ctx.workerDefinition().Identifier() != null) {
-            modelBuilder.endCallableUnitBody();
+            modelBuilder.endCallableUnitBody(getCurrentLocation(ctx));
 
             String workerName = ctx.workerDefinition().Identifier().getText();
             WhiteSpaceDescriptor whiteSpaceDescriptor = null;
@@ -1044,7 +1044,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
     @Override
     public void exitIfElseStatement(BallerinaParser.IfElseStatementContext ctx) {
         if (ctx.exception == null) {
-            modelBuilder.addIfElseStmt();
+            modelBuilder.addIfElseStmt(getCurrentLocation(ctx));
         }
     }
 
@@ -1062,7 +1062,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
             if (isVerboseMode) {
                 whiteSpaceDescriptor = WhiteSpaceUtil.getIfClauseWS(tokenStream, ctx);
             }
-            modelBuilder.addIfClause(whiteSpaceDescriptor);
+            modelBuilder.addIfClause(whiteSpaceDescriptor, getCurrentLocation(ctx));
         }
     }
 
@@ -1083,7 +1083,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
         if (isVerboseMode) {
             whiteSpaceDescriptor = WhiteSpaceUtil.getElseIfClauseWS(tokenStream, ctx);
         }
-        modelBuilder.addElseIfClause(whiteSpaceDescriptor);
+        modelBuilder.addElseIfClause(whiteSpaceDescriptor, getCurrentLocation(ctx));
     }
 
     @Override
@@ -1100,7 +1100,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
             if (isVerboseMode) {
                 whiteSpaceDescriptor = WhiteSpaceUtil.getElseClauseWS(tokenStream, ctx);
             }
-            modelBuilder.addElseClause(whiteSpaceDescriptor);
+            modelBuilder.addElseClause(whiteSpaceDescriptor, getCurrentLocation(ctx));
         }
     }
 
