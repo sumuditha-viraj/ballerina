@@ -864,9 +864,10 @@ public class BLangModelBuilder {
         currentScope = blockStmtBuilder.getCurrentScope();
     }
 
-    public void endCallableUnitBody() {
+    public void endCallableUnitBody(NodeLocation location) {
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
         BlockStmt blockStmt = blockStmtBuilder.build();
+        blockStmt.setLocation(location);
         currentCUBuilder.setBody(blockStmt);
         currentScope = blockStmt.getEnclosingScope();
     }
@@ -926,9 +927,9 @@ public class BLangModelBuilder {
         currentCUBuilder = null;
     }
 
-    public void startResourceDef() {
+    public void startResourceDef(NodeLocation location) {
         if (currentScope instanceof BlockStmt) {
-            endCallableUnitBody();
+            endCallableUnitBody(location);
         }
 //        currentWorker.push("default");
         currentCUBuilder = new Resource.ResourceBuilder(currentScope);
@@ -983,7 +984,7 @@ public class BLangModelBuilder {
     public void startActionDef(NodeLocation location) {
         // TODO Check whether the following if block is needed anymore.
         if (currentScope instanceof BlockStmt) {
-            endCallableUnitBody();
+            endCallableUnitBody(location);
         }
         currentCUBuilder = new BallerinaAction.BallerinaActionBuilder(currentScope);
         currentCUBuilder.setNodeLocation(location);
@@ -1216,7 +1217,7 @@ public class BLangModelBuilder {
         currentScope = blockStmtBuilder.getCurrentScope();
     }
 
-    public void addIfClause(WhiteSpaceDescriptor whiteSpaceDescriptor) {
+    public void addIfClause(WhiteSpaceDescriptor whiteSpaceDescriptor, NodeLocation location) {
         IfElseStmt.IfElseStmtBuilder ifElseStmtBuilder = ifElseStmtBuilderStack.peek();
         if (whiteSpaceDescriptor != null) {
             WhiteSpaceDescriptor ws = ifElseStmtBuilder.getWhiteSpaceDescriptor();
@@ -1232,16 +1233,18 @@ public class BLangModelBuilder {
 
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
         BlockStmt blockStmt = blockStmtBuilder.build();
+        blockStmt.setLocation(location);
         ifElseStmtBuilder.setThenBody(blockStmt);
 
         currentScope = blockStmt.getEnclosingScope();
     }
 
-    public void addElseIfClause(WhiteSpaceDescriptor whiteSpaceDescriptor) {
+    public void addElseIfClause(WhiteSpaceDescriptor whiteSpaceDescriptor, NodeLocation location) {
         IfElseStmt.IfElseStmtBuilder ifElseStmtBuilder = ifElseStmtBuilderStack.peek();
 
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
         BlockStmt elseIfStmtBlock = blockStmtBuilder.build();
+        elseIfStmtBlock.setLocation(location);
 
         Expression condition = exprStack.pop();
         checkArgExprValidity(ifElseStmtBuilder.getLocation(), condition);
@@ -1258,7 +1261,7 @@ public class BLangModelBuilder {
         currentScope = blockStmtBuilder.getCurrentScope();
     }
 
-    public void addElseClause(WhiteSpaceDescriptor whiteSpaceDescriptor) {
+    public void addElseClause(WhiteSpaceDescriptor whiteSpaceDescriptor, NodeLocation location) {
         IfElseStmt.IfElseStmtBuilder ifElseStmtBuilder = ifElseStmtBuilderStack.peek();
         if (whiteSpaceDescriptor != null) {
             WhiteSpaceDescriptor ws = ifElseStmtBuilder.getWhiteSpaceDescriptor();
@@ -1270,14 +1273,16 @@ public class BLangModelBuilder {
         }
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
         BlockStmt elseStmt = blockStmtBuilder.build();
+        elseStmt.setLocation(location);
         ifElseStmtBuilder.setElseBody(elseStmt);
 
         currentScope = elseStmt.getEnclosingScope();
     }
 
-    public void addIfElseStmt() {
+    public void addIfElseStmt(NodeLocation location) {
         IfElseStmt.IfElseStmtBuilder ifElseStmtBuilder = ifElseStmtBuilderStack.pop();
         IfElseStmt ifElseStmt = ifElseStmtBuilder.build();
+        ifElseStmt.setLocation(location);
         addToBlockStmt(ifElseStmt);
     }
 
