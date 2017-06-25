@@ -291,7 +291,7 @@ public class BLangAntlr4Listener implements BallerinaListener {
         if (isVerboseMode) {
             whiteSpaceDescriptor = WhiteSpaceUtil.getFunctionDefWS(tokenStream, ctx);
         }
-        modelBuilder.addFunction(whiteSpaceDescriptor, functionName, isNative);
+        modelBuilder.addFunction(getCurrentLocation(ctx), whiteSpaceDescriptor, functionName, isNative);
     }
 
     @Override

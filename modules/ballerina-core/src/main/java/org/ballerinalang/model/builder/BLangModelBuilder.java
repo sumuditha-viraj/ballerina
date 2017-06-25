@@ -890,11 +890,13 @@ public class BLangModelBuilder {
         currentScope = currentCUBuilder.getCurrentScope();
     }
 
-    public void addFunction(WhiteSpaceDescriptor whiteSpaceDescriptor, String name, boolean isNative) {
+    public void addFunction(NodeLocation location, WhiteSpaceDescriptor whiteSpaceDescriptor, String name,
+                            boolean isNative) {
         currentCUBuilder.setWhiteSpaceDescriptor(whiteSpaceDescriptor);
         currentCUBuilder.setIdentifier(new Identifier(name));
         currentCUBuilder.setPkgPath(currentPackagePath);
         currentCUBuilder.setNative(isNative);
+        currentCUBuilder.setNodeLocation(location);
 
         getAnnotationAttachments().forEach(attachment -> currentCUBuilder.addAnnotation(attachment));
 
