@@ -1337,6 +1337,7 @@ public class BLangModelBuilder {
         }
 
         BlockStmt.BlockStmtBuilder catchBlockBuilder = blockStmtBuilderStack.pop();
+        catchBlockBuilder.setLocation(nodeLocation);
         BlockStmt catchBlock = catchBlockBuilder.build();
         currentScope = catchBlock.getEnclosingScope();
 
@@ -1390,8 +1391,8 @@ public class BLangModelBuilder {
             }
             ws.addChildDescriptor(TRY_CLAUSE, whiteSpaceDescriptor);
         }
+        tryCatchStmtBuilder.setLocation(location);
         TryCatchStmt tryCatchStmt = tryCatchStmtBuilder.build();
-        tryCatchStmt.setLocation(location);
         addToBlockStmt(tryCatchStmt);
     }
 
