@@ -16,7 +16,6 @@
  */
 package org.ballerinalang.model;
 
-
 /**
  * {@code NodeLocation} represents the location of a particular language construct in the source file.
  *
