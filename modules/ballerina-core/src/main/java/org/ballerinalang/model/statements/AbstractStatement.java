@@ -30,7 +30,6 @@ import org.ballerinalang.model.WhiteSpaceDescriptor;
  * @since 0.8.0
  */
 public abstract class AbstractStatement implements Statement {
-
     protected NodeLocation location;
     protected WhiteSpaceDescriptor whiteSpaceDescriptor;
     protected boolean alwaysReturns;

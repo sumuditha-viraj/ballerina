@@ -288,7 +288,6 @@ public class AnnotationDef implements CompilationUnit, SymbolScope, BLangSymbol,
          * 
          * @param annotation annotation attachment
          */
-
         public void addAnnotation(AnnotationAttachment annotation) {
             this.annotationList.add(annotation);
         }

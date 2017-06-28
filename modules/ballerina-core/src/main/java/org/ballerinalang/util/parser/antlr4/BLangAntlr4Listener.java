@@ -2118,8 +2118,8 @@ public class BLangAntlr4Listener implements BallerinaListener {
         int stopColumn = -1;
         Token stop = ctx.getStop();
         if (stop != null) {
-            stopLineNumber = ctx.getStop().getLine();
-            stopColumn = ctx.getStop().getCharPositionInLine();
+            stopLineNumber = stop.getLine();
+            stopColumn = stop.getCharPositionInLine();
         }
         return new NodeLocation(packageDirPath, fileName, lineNo, startLineNumber, startColumn, stopLineNumber,
                 stopColumn);

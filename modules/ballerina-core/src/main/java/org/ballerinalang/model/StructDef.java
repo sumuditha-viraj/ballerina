@@ -58,10 +58,6 @@ public class StructDef extends BType implements CompilationUnit, SymbolScope, St
         return location;
     }
 
-    public void setNodeLocation(NodeLocation location) {
-        this.location = location;
-    }
-
     public void setWhiteSpaceDescriptor(WhiteSpaceDescriptor whiteSpaceDescriptor) {
         this.whiteSpaceDescriptor = whiteSpaceDescriptor;
     }
