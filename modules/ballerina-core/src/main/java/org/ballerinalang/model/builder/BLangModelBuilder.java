@@ -416,10 +416,6 @@ public class BLangModelBuilder {
     /**
      * Start an annotation definition.
      *
-<<<<<<< HEAD
-=======
-     * @param location Location of the annotation definition in the source file
->>>>>>> 3f8b9067856ef73f02a2ea8f6038e9f817d838aa
      * @param whiteSpaceDescriptor Holds whitespace region data
      */
     public void startAnnotationDef(WhiteSpaceDescriptor whiteSpaceDescriptor) {
@@ -444,6 +440,7 @@ public class BLangModelBuilder {
         validateIdentifier(name, location);
         annotationDefBuilder.setIdentifier(new Identifier(name));
         annotationDefBuilder.setPackagePath(currentPackagePath);
+        annotationDefBuilder.setNodeLocation(location);
 
         getAnnotationAttachments().forEach(attachment -> annotationDefBuilder.addAnnotation(attachment));
 
@@ -870,8 +867,8 @@ public class BLangModelBuilder {
 
     public void endCallableUnitBody(NodeLocation location) {
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
+        blockStmtBuilder.setLocation(location);
         BlockStmt blockStmt = blockStmtBuilder.build();
-        blockStmt.setLocation(location);
         currentCUBuilder.setBody(blockStmt);
         currentScope = blockStmt.getEnclosingScope();
     }
@@ -928,6 +925,7 @@ public class BLangModelBuilder {
         currentCUBuilder.setPkgPath(currentPackagePath);
         currentCUBuilder.setNative(isNative);
         currentCUBuilder.setWhiteSpaceDescriptor(whiteSpaceDescriptor);
+        currentCUBuilder.setNodeLocation(location);
         addReturnTypes(location, new SimpleTypeName[]{returnTypeName});
 
         getAnnotationAttachments().forEach(attachment -> currentCUBuilder.addAnnotation(attachment));
@@ -1156,6 +1154,7 @@ public class BLangModelBuilder {
 
         // Get the statement block at the top of the block statement stack and set as the while body.
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
+        blockStmtBuilder.setLocation(location);
         BlockStmt blockStmt = blockStmtBuilder.build();
         whileStmtBuilder.setWhileBody(blockStmt);
 
@@ -1191,6 +1190,7 @@ public class BLangModelBuilder {
 
         // Get the statement block at the top of the block statement stack and set as the transform body.
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
+        blockStmtBuilder.setLocation(location);
         BlockStmt blockStmt = blockStmtBuilder.build();
         transformStmtBuilder.setTransformBody(blockStmt);
 
@@ -1244,8 +1244,8 @@ public class BLangModelBuilder {
         ifElseStmtBuilder.setIfCondition(condition);
 
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
+        blockStmtBuilder.setLocation(location);
         BlockStmt blockStmt = blockStmtBuilder.build();
-        blockStmt.setLocation(location);
         ifElseStmtBuilder.setThenBody(blockStmt);
 
         currentScope = blockStmt.getEnclosingScope();
@@ -1255,8 +1255,8 @@ public class BLangModelBuilder {
         IfElseStmt.IfElseStmtBuilder ifElseStmtBuilder = ifElseStmtBuilderStack.peek();
 
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
+        blockStmtBuilder.setLocation(location);
         BlockStmt elseIfStmtBlock = blockStmtBuilder.build();
-        elseIfStmtBlock.setLocation(location);
 
         Expression condition = exprStack.pop();
         checkArgExprValidity(ifElseStmtBuilder.getLocation(), condition);
@@ -1284,8 +1284,8 @@ public class BLangModelBuilder {
             ws.addChildDescriptor(ELSE_CLAUSE, whiteSpaceDescriptor);
         }
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
+        blockStmtBuilder.setLocation(location);
         BlockStmt elseStmt = blockStmtBuilder.build();
-        elseStmt.setLocation(location);
         ifElseStmtBuilder.setElseBody(elseStmt);
 
         currentScope = elseStmt.getEnclosingScope();
@@ -1293,8 +1293,8 @@ public class BLangModelBuilder {
 
     public void addIfElseStmt(NodeLocation location) {
         IfElseStmt.IfElseStmtBuilder ifElseStmtBuilder = ifElseStmtBuilderStack.pop();
+        ifElseStmtBuilder.setNodeLocation(location);
         IfElseStmt ifElseStmt = ifElseStmtBuilder.build();
-        ifElseStmt.setLocation(location);
         addToBlockStmt(ifElseStmt);
     }
 
@@ -1382,8 +1382,8 @@ public class BLangModelBuilder {
             ws.addChildDescriptor(FINALLY_CLAUSE, whiteSpaceDescriptor);
         }
         BlockStmt.BlockStmtBuilder catchBlockBuilder = blockStmtBuilderStack.pop();
+        catchBlockBuilder.setLocation(location);
         BlockStmt finallyBlock = catchBlockBuilder.build();
-        finallyBlock.setLocation(location);
         currentScope = finallyBlock.getEnclosingScope();
         tryCatchStmtBuilder.setFinallyBlockStmt(finallyBlock);
     }
@@ -1434,6 +1434,7 @@ public class BLangModelBuilder {
         Identifier identifier = new Identifier(paramName);
         ForkJoinStmt.ForkJoinStmtBuilder forkJoinStmtBuilder = forkJoinStmtBuilderStack.peek();
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
+        blockStmtBuilder.setLocation(location);
         BlockStmt forkJoinStmt = blockStmtBuilder.build();
         SymbolName symbolName = new SymbolName(identifier.getName(), currentPackagePath);
 
@@ -1483,6 +1484,7 @@ public class BLangModelBuilder {
         Identifier identifier = new Identifier(paramName);
         ForkJoinStmt.ForkJoinStmtBuilder forkJoinStmtBuilder = forkJoinStmtBuilderStack.peek();
         BlockStmt.BlockStmtBuilder blockStmtBuilder = blockStmtBuilderStack.pop();
+        blockStmtBuilder.setLocation(location);
         BlockStmt timeoutStmt = blockStmtBuilder.build();
         forkJoinStmtBuilder.setTimeoutBlock(timeoutStmt);
         forkJoinStmtBuilder.setTimeoutExpression(exprStack.pop());
@@ -1510,8 +1512,8 @@ public class BLangModelBuilder {
             forkJoinStmtBuilder.setWorkers(workerList.toArray(new Worker[workerList.size()]));
         }
         //forkJoinStmtBuilder.setMessageReference((VariableRefExpr) exprStack.pop());
+        forkJoinStmtBuilder.setNodeLocation(location);
         ForkJoinStmt forkJoinStmt = forkJoinStmtBuilder.build();
-        forkJoinStmt.setLocation(location);
         addToBlockStmt(forkJoinStmt);
         currentScope = forkJoinStmt.getEnclosingScope();
 
@@ -1590,8 +1592,8 @@ public class BLangModelBuilder {
     public void addAbortedClause(NodeLocation location) {
         TransactionStmt.TransactionStmtBuilder transactionStmtBuilder = transactionStmtBuilderStack.peek();
         BlockStmt.BlockStmtBuilder abortedBlockBuilder = blockStmtBuilderStack.pop();
+        abortedBlockBuilder.setLocation(location);
         BlockStmt abortedBlock = abortedBlockBuilder.build();
-        abortedBlock.setLocation(location);
         currentScope = abortedBlock.getEnclosingScope();
         transactionStmtBuilder.setAbortedBlockStmt(abortedBlock);
     }
@@ -1610,8 +1612,8 @@ public class BLangModelBuilder {
     public void addCommittedClause(NodeLocation location) {
         TransactionStmt.TransactionStmtBuilder transactionStmtBuilder = transactionStmtBuilderStack.peek();
         BlockStmt.BlockStmtBuilder committedBlockBuilder = blockStmtBuilderStack.pop();
+        committedBlockBuilder.setLocation(location);
         BlockStmt committedBlock = committedBlockBuilder.build();
-        committedBlock.setLocation(location);
         currentScope = committedBlock.getEnclosingScope();
         transactionStmtBuilder.setCommittedBlockStmt(committedBlock);
     }
@@ -1619,8 +1621,8 @@ public class BLangModelBuilder {
     public void addTransactionStmt(NodeLocation location, WhiteSpaceDescriptor whiteSpaceDescriptor) {
         TransactionStmt.TransactionStmtBuilder transactionStmtBuilder = transactionStmtBuilderStack.pop();
         transactionStmtBuilder.setWhiteSpaceDescriptor(whiteSpaceDescriptor);
+        transactionStmtBuilder.setLocation(location);
         TransactionStmt transactionStmt = transactionStmtBuilder.build();
-        transactionStmt.setLocation(location);
         addToBlockStmt(transactionStmt);
     }
 

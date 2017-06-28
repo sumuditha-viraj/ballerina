@@ -288,6 +288,7 @@ public class AnnotationDef implements CompilationUnit, SymbolScope, BLangSymbol,
          * 
          * @param annotation annotation attachment
          */
+
         public void addAnnotation(AnnotationAttachment annotation) {
             this.annotationList.add(annotation);
         }
@@ -298,6 +299,10 @@ public class AnnotationDef implements CompilationUnit, SymbolScope, BLangSymbol,
 
         public WhiteSpaceDescriptor getWhiteSpaceDescriptor() {
             return whiteSpaceDescriptor;
+        }
+
+        public void setNodeLocation(NodeLocation location) {
+            this.location = location;
         }
 
         /**
