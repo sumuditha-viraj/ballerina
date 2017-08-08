@@ -71,6 +71,13 @@ public class BLangPackages {
         throw new IllegalArgumentException("invalid source file: " + sourcePath.toString());
     }
 
+    public static BLangPackage loadEntryPackage(Path packagePath, BLangProgram bLangProgram,
+                                                ProgramDirRepository programDirRepository) {
+        BLangPackage bLangPackage = BLangPackages.loadFile(packagePath, programDirRepository, bLangProgram);
+        bLangProgram.addEntryPoint(packagePath.getFileName().toString());
+        return bLangPackage;
+    }
+
     public static BLangPackage loadPackage(Path packagePath,
                                            PackageRepository packageRepo,
                                            BLangProgram bLangProgram) {

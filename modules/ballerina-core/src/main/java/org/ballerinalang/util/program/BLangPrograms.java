@@ -160,7 +160,7 @@ public class BLangPrograms {
         }
     }
 
-    private static UserRepository initUserRepository(PackageRepository systemRepo, PackageRepository[] extRepos) {
+    public static UserRepository initUserRepository(PackageRepository systemRepo, PackageRepository[] extRepos) {
         Path userRepoPath;
         String userRepoDir = System.getenv(USER_REPO_ENV_KEY);
         if (userRepoDir == null || userRepoDir.isEmpty()) {

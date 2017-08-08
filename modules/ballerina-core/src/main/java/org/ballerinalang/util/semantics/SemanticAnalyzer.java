@@ -188,8 +188,10 @@ public class SemanticAnalyzer implements NodeVisitor {
     private int whileStmtCount = 0;
     private int transactionStmtCount = 0;
     private boolean isWithinWorker = false;
+
     private SymbolScope currentScope;
     private SymbolScope currentPackageScope;
+
     private SymbolScope nativeScope;
 
     private BlockStmt.BlockStmtBuilder pkgInitFuncStmtBuilder;
@@ -2670,11 +2672,11 @@ public class SemanticAnalyzer implements NodeVisitor {
 
     // Private methods.
 
-    private void openScope(SymbolScope symbolScope) {
+    protected void openScope(SymbolScope symbolScope) {
         currentScope = symbolScope;
     }
 
-    private void closeScope() {
+    protected void closeScope() {
         currentScope = currentScope.getEnclosingScope();
     }
 
@@ -4245,5 +4247,13 @@ public class SemanticAnalyzer implements NodeVisitor {
     static class AssignabilityResult {
         boolean assignable;
         Expression expression;
+    }
+
+    protected SymbolScope getCurrentScope() {
+        return currentScope;
+    }
+
+    public SymbolScope getNativeScope() {
+        return nativeScope;
     }
 }
