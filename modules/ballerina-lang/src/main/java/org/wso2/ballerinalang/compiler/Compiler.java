@@ -18,6 +18,7 @@
 package org.wso2.ballerinalang.compiler;
 
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BPackageSymbol;
+import org.wso2.ballerinalang.compiler.tree.BLangPackage;
 import org.wso2.ballerinalang.compiler.util.CompilerContext;
 
 /**
@@ -50,6 +51,11 @@ public class Compiler {
 
     public void compile() {
         BPackageSymbol pSymbol = pkgLoader.loadEntryPackage("foo.bal");
+        // TODO Impliment CompilerPolicy.. Phases, PARSE, SEMANTIC_ANALYSIS, CODE_ANALYSIS, CODEGEN etc.
+    }
+
+    public BLangPackage getModel() {
+        return pkgLoader.getModel("foo.bal");
         // TODO Impliment CompilerPolicy.. Phases, PARSE, SEMANTIC_ANALYSIS, CODE_ANALYSIS, CODEGEN etc.
     }
 }

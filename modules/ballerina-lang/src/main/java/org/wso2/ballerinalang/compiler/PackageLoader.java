@@ -56,6 +56,10 @@ public class PackageLoader {
 
     private PackageRepository programRepo;
 
+    public Map<PackageID, BPackageSymbol> getPackages() {
+        return packages;
+    }
+
     private Map<PackageID, BPackageSymbol> packages;
 
     public static PackageLoader getInstance(CompilerContext context) {
@@ -75,7 +79,9 @@ public class PackageLoader {
         this.symbolEnter = SymbolEnter.getInstance(context);
         this.packages = new HashMap<>();
 
-        Path sourceRoot = Paths.get("/Users/sameera/rewrite-compiler/bal");
+        //Path sourceRoot = Paths.get("/Users/sameera/rewrite-compiler/bal");
+        Path sourceRoot = Paths.get("/Users/wso2/wso2/dev/testing/Ballerina/misc");
+
         this.programRepo = loadFSProgramRepository(sourceRoot);
     }
 
@@ -99,6 +105,30 @@ public class PackageLoader {
         }
 
         return pSymbol;
+    }
+
+    public BLangPackage getModel(String sourcePkg) {
+        // TODO Implement the support for loading a source package
+        BLangIdentifier version = new BLangIdentifier();
+        version.setValue("0.0.0");
+        PackageID pkgId = new PackageID(new ArrayList<>(), version);
+        PackageEntity pkgEntity = this.programRepo.loadPackage(pkgId, sourcePkg);
+        log("* Package Entity: " + pkgEntity);
+
+        //BPackageSymbol pSymbol;
+        if (pkgEntity.getKind() == PackageEntity.Kind.SOURCE) {
+            BLangPackage pkgNode = this.sourceCompile((PackageSource) pkgEntity);
+            return pkgNode;
+
+            //pSymbol = symbolEnter.definePackage(pkgNode);
+            //packages.put(pkgId, pSymbol);
+        } else {
+            // This is a compiled package.
+            //pSymbol = null;
+            return null;
+        }
+
+        //return pSymbol;
     }
 
     private BLangPackage sourceCompile(PackageSource pkgSource) {

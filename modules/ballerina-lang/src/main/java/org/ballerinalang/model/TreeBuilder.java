@@ -62,7 +62,7 @@ import org.wso2.ballerinalang.compiler.tree.types.BLangValueType;
 
 /**
  * This contains the functionality of building the nodes in the AST.
- * 
+ *
  * @since 0.94
  */
 public class TreeBuilder {
@@ -70,51 +70,51 @@ public class TreeBuilder {
     public static CompilationUnitNode createCompilationUnit() {
         return new BLangCompilationUnit();
     }
-    
+
     public static PackageNode createPackageNode() {
         return new BLangPackage();
     }
-    
+
     public static PackageDeclarationNode createPackageDeclarationNode() {
         return new BLangPackageDeclaration();
     }
-    
+
     public static IdentifierNode createIdentifierNode() {
         return new BLangIdentifier();
     }
-    
+
     public static ImportPackageNode createImportPackageNode() {
         return new BLangImportPackage();
     }
-    
+
     public static XMLNSDeclarationNode createXMLNSNode() {
         return new BLangXMLNS();
     }
-    
+
     public static VariableNode createVariableNode() {
         return new BLangVariable();
     }
-    
+
     public static FunctionNode createFunctionNode() {
         return new BLangFunction();
     }
-    
+
     public static BlockNode createBlockNode() {
         return new BLangBlockStmt();
     }
-    
+
     public static LiteralNode createLiteralExpression() {
         return new BLangLiteral();
     }
 
-    public static ArrayLiteralNode createArrayLiteralNode(){
+    public static ArrayLiteralNode createArrayLiteralNode() {
         return new BLangArrayLiteral();
     }
 
     public static VariableDefinitionNode createVariableDefinitionNode() {
         return new BLangVariableDef();
     }
-    
+
     public static ValueTypeNode createValueTypeNode() {
         return new BLangValueType();
     }
@@ -138,17 +138,17 @@ public class TreeBuilder {
     public static FunctionTypeNode createFunctionTypeNode() {
         return new BLangFunctionTypeNode();
     }
-    
+
     public static StructNode createStructNode() {
         return new BLangStruct();
     }
-    
+
     public static ConnectorNode createConnectorNode() {
         return new BLangConnector();
     }
-    
+
     public static ActionNode createActionNode() {
         return new BLangAction();
     }
-        
+
 }

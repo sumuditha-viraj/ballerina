@@ -68,7 +68,7 @@ public class BLangPackageBuilder {
     private Stack<List<TypeNode>> typeNodeListStack = new Stack<>();
 
     private Stack<BlockNode> blockNodeStack = new Stack<>();
-    
+
     private Stack<VariableNode> varStack = new Stack<>();
 
     private Stack<List<VariableNode>> varListStack = new Stack<>();
@@ -80,11 +80,11 @@ public class BLangPackageBuilder {
     private Stack<List<ExpressionNode>> exprNodeListStack = new Stack<>();
 
     private Stack<PackageID> pkgIdStack = new Stack<>();
-    
+
     private Stack<StructNode> structStack = new Stack<>();
-        
+
     private Stack<ConnectorNode> connectorNodeStack = new Stack<>();
-    
+
     private Stack<List<ActionNode>> actionNodeStack = new Stack<>();
 
     public BLangPackageBuilder(CompilationUnitNode compUnit) {
@@ -104,7 +104,7 @@ public class BLangPackageBuilder {
         if (!this.typeNodeListStack.empty()) {
             List<TypeNode> typeNodeList = this.typeNodeListStack.peek();
             eType = (BLangType) typeNodeList.get(typeNodeList.size() - 1);
-            typeNodeList.remove(typeNodeList.size() -1);
+            typeNodeList.remove(typeNodeList.size() - 1);
         } else {
             eType = (BLangType) this.typeNodeStack.pop();
         }
@@ -178,7 +178,7 @@ public class BLangPackageBuilder {
         addType(functionTypeNode);
     }
 
-    private void addType(TypeNode typeNode){
+    private void addType(TypeNode typeNode) {
         if (!this.typeNodeListStack.empty()) {
             this.typeNodeListStack.peek().add(typeNode);
         } else {
@@ -253,7 +253,7 @@ public class BLangPackageBuilder {
         addExpressionNode(litExpr);
     }
 
-    public void addArrayInitExpr(DiagnosticPos pos, boolean argsAvailable){
+    public void addArrayInitExpr(DiagnosticPos pos, boolean argsAvailable) {
         List<ExpressionNode> argExprList;
         if (argsAvailable) {
             argExprList = exprNodeListStack.pop();
@@ -298,13 +298,13 @@ public class BLangPackageBuilder {
         nameComps.forEach(e -> nameCompNodes.add(this.createIdentifier(e)));
         this.pkgIdStack.add(new PackageID(nameCompNodes, versionNode));
     }
-    
+
     public void populatePackageDeclaration() {
         PackageDeclarationNode pkgDecl = TreeBuilder.createPackageDeclarationNode();
         pkgDecl.setPackageID(this.pkgIdStack.pop());
         this.compUnit.addTopLevelNode(pkgDecl);
     }
-    
+
     public void addImportPackageDeclaration(String alias) {
         ImportPackageNode impDecl = TreeBuilder.createImportPackageNode();
         IdentifierNode aliasNode;
@@ -333,7 +333,7 @@ public class BLangPackageBuilder {
         VariableNode var = this.generateBasicVarNode(identifier, exprAvailable);
         this.compUnit.addTopLevelNode(var);
     }
-    
+
     public void addConstVariable(String identifier) {
         VariableNode var = this.generateBasicVarNode(identifier, true);
         var.addFlag(Flag.CONST);
@@ -343,19 +343,19 @@ public class BLangPackageBuilder {
     public void startStructDef() {
         this.structStack.add(TreeBuilder.createStructNode());
     }
-    
+
     public void endStructDef(String identifier) {
         StructNode structNode = this.structStack.pop();
         structNode.setName(this.createIdentifier(identifier));
         this.varListStack.pop().forEach(structNode::addField);
         this.compUnit.addTopLevelNode(structNode);
     }
-    
+
     public void startConnectorDef() {
         ConnectorNode connectorNode = TreeBuilder.createConnectorNode();
         this.connectorNodeStack.push(connectorNode);
     }
-    
+
     public void startConnectorBody() {
         /* end of connector definition header, so let's populate 
          * the connector information before processing the body */
@@ -371,13 +371,13 @@ public class BLangPackageBuilder {
         /* action node list to contain the actions of the connector */
         this.actionNodeStack.add(new ArrayList<>());
     }
-    
+
     public void endConnectorDef(String identifier) {
         ConnectorNode connectorNode = this.connectorNodeStack.pop();
         connectorNode.setName(this.createIdentifier(identifier));
         this.compUnit.addTopLevelNode(connectorNode);
     }
-    
+
     public void endConnectorBody() {
         ConnectorNode connectorNode = this.connectorNodeStack.peek();
         this.blockNodeStack.pop().getStatements().forEach(

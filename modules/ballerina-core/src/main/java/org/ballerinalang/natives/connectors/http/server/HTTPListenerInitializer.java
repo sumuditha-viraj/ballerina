@@ -27,7 +27,7 @@ import org.wso2.carbon.transport.http.netty.config.ListenerConfiguration;
 import org.wso2.carbon.transport.http.netty.config.TransportProperty;
 import org.wso2.carbon.transport.http.netty.config.TransportsConfiguration;
 import org.wso2.carbon.transport.http.netty.internal.HTTPTransportContextHolder;
-import org.wso2.carbon.transport.http.netty.listener.HTTPTransportListener;
+//import org.wso2.carbon.transport.http.netty.listener.HTTPTransportListener;
 
 import java.io.PrintStream;
 import java.util.Set;
@@ -52,8 +52,8 @@ public class HTTPListenerInitializer {
         Set<ListenerConfiguration> listenerConfigurations = trpConfig.getListenerConfigurations();
         Set<TransportProperty> transportProperties = trpConfig.getTransportProperties();
 
-        HTTPTransportListener listener = new HTTPTransportListener(transportProperties, listenerConfigurations);
-        listener.start();
+        //HTTPTransportListener listener = new HTTPTransportListener(transportProperties, listenerConfigurations);
+        //listener.start();
 
         for (ListenerConfiguration listenerConfig : listenerConfigurations) {
             outStream.println("ballerina: started listener " +
