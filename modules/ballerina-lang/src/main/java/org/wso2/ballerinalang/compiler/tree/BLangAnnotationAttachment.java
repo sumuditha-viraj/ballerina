@@ -18,12 +18,47 @@
 package org.wso2.ballerinalang.compiler.tree;
 
 import org.ballerinalang.model.tree.AnnotationAttachmentNode;
+import org.ballerinalang.model.tree.IdentifierNode;
 import org.ballerinalang.model.tree.NodeKind;
+import org.ballerinalang.model.tree.expressions.AnnotationAttachmentAttributeNode;
+import org.ballerinalang.model.tree.expressions.AnnotationAttachmentAttributeValueNode;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangAnnotAttachmentAttribute;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @since 0.94
  */
 public class BLangAnnotationAttachment extends BLangNode implements AnnotationAttachmentNode {
+
+    public List<AnnotationAttachmentAttributeNode> attributes;
+    BLangIdentifier annotationName;
+
+    public BLangAnnotationAttachment() {
+        this.attributes = new ArrayList<>();
+    }
+
+    @Override
+    public void addAttribute(String attrName, AnnotationAttachmentAttributeValueNode value) {
+        attributes.add(new BLangAnnotAttachmentAttribute(attrName, value));
+    }
+
+    @Override
+    public List<AnnotationAttachmentAttributeNode> geAttributes() {
+        return attributes;
+    }
+
+    @Override
+    public IdentifierNode getAnnotationName() {
+        return annotationName;
+    }
+
+    @Override
+    public void setAnnotationName(IdentifierNode name) {
+        this.annotationName = (BLangIdentifier) name;
+    }
+
     @Override
     public void accept(BLangNodeVisitor visitor) {
         visitor.visit(this);
@@ -32,5 +67,10 @@ public class BLangAnnotationAttachment extends BLangNode implements AnnotationAt
     @Override
     public NodeKind getKind() {
         return NodeKind.ANNOTATION_ATTACHMENT;
+    }
+    
+    @Override
+    public String toString() {
+        return "BLangAnnotationAttachment: " + annotationName + " " + attributes;
     }
 }

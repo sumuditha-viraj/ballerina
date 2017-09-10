@@ -17,8 +17,21 @@
 */
 package org.ballerinalang.model.tree;
 
+import org.ballerinalang.model.tree.expressions.AnnotationAttachmentAttributeNode;
+import org.ballerinalang.model.tree.expressions.AnnotationAttachmentAttributeValueNode;
+
+import java.util.List;
+
 /**
  * @since 0.94
  */
 public interface AnnotationAttachmentNode extends Node {
+
+    IdentifierNode getAnnotationName();
+
+    void setAnnotationName(IdentifierNode name);
+
+    List<AnnotationAttachmentAttributeNode> geAttributes();
+
+    void addAttribute(String attrName, AnnotationAttachmentAttributeValueNode value);
 }

@@ -22,20 +22,21 @@ import org.ballerinalang.repository.CompositePackageRepository;
 import org.ballerinalang.repository.PackageEntity;
 import org.ballerinalang.repository.PackageRepository;
 import org.ballerinalang.repository.PackageSource;
-import org.ballerinalang.repository.fs.FSPackageRepository;
+import org.ballerinalang.repository.fs.LocalFSPackageRepository;
 import org.wso2.ballerinalang.compiler.parser.Parser;
 import org.wso2.ballerinalang.compiler.semantics.analyzer.SymbolEnter;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BPackageSymbol;
 import org.wso2.ballerinalang.compiler.tree.BLangIdentifier;
 import org.wso2.ballerinalang.compiler.tree.BLangPackage;
 import org.wso2.ballerinalang.compiler.util.CompilerContext;
+import org.wso2.ballerinalang.compiler.util.CompilerOptions;
 
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.ballerinalang.compiler.CompilerOptionName.SOURCE_ROOT;
 
 /**
  * This class contains methods to load a given package symbol.
@@ -48,19 +49,12 @@ public class PackageLoader {
     private static final CompilerContext.Key<PackageLoader> PACKAGE_LOADER_KEY =
             new CompilerContext.Key<>();
 
-    private CompilerContext context;
-
+    private CompilerOptions options;
     private Parser parser;
-
     private SymbolEnter symbolEnter;
 
-    private PackageRepository programRepo;
-
-    public Map<PackageID, BPackageSymbol> getPackages() {
-        return packages;
-    }
-
     private Map<PackageID, BPackageSymbol> packages;
+    private PackageRepository packageRepo;
 
     public static PackageLoader getInstance(CompilerContext context) {
         PackageLoader loader = context.get(PACKAGE_LOADER_KEY);
@@ -72,63 +66,38 @@ public class PackageLoader {
     }
 
     public PackageLoader(CompilerContext context) {
-        this.context = context;
-        this.context.put(PACKAGE_LOADER_KEY, this);
+        context.put(PACKAGE_LOADER_KEY, this);
 
+        this.options = CompilerOptions.getInstance(context);
         this.parser = Parser.getInstance(context);
         this.symbolEnter = SymbolEnter.getInstance(context);
+
         this.packages = new HashMap<>();
-
-        //Path sourceRoot = Paths.get("/Users/sameera/rewrite-compiler/bal");
-        Path sourceRoot = Paths.get("/Users/wso2/wso2/dev/testing/Ballerina/misc");
-
-        this.programRepo = loadFSProgramRepository(sourceRoot);
+        loadPackageRepository(context);
     }
 
-    public BPackageSymbol loadEntryPackage(String sourcePkg) {
+    public BLangPackage loadEntryPackage(String sourcePkg) {
         // TODO Implement the support for loading a source package
         BLangIdentifier version = new BLangIdentifier();
         version.setValue("0.0.0");
         PackageID pkgId = new PackageID(new ArrayList<>(), version);
-        PackageEntity pkgEntity = this.programRepo.loadPackage(pkgId, sourcePkg);
+        PackageEntity pkgEntity = this.packageRepo.loadPackage(pkgId, sourcePkg);
         log("* Package Entity: " + pkgEntity);
 
-        BPackageSymbol pSymbol;
+        BLangPackage pkgNode;
         if (pkgEntity.getKind() == PackageEntity.Kind.SOURCE) {
-            BLangPackage pkgNode = this.sourceCompile((PackageSource) pkgEntity);
+            pkgNode = this.sourceCompile((PackageSource) pkgEntity);
 
-            pSymbol = symbolEnter.definePackage(pkgNode);
+            BPackageSymbol pSymbol = symbolEnter.definePackage(pkgNode);
+            pkgNode.symbol = pSymbol;
             packages.put(pkgId, pSymbol);
         } else {
             // This is a compiled package.
-            pSymbol = null;
+            // TODO Throw an error. Entry package cannot be a compiled package
+            throw new RuntimeException("TODO Entry package cannot be a compiled package");
         }
 
-        return pSymbol;
-    }
-
-    public BLangPackage getModel(String sourcePkg) {
-        // TODO Implement the support for loading a source package
-        BLangIdentifier version = new BLangIdentifier();
-        version.setValue("0.0.0");
-        PackageID pkgId = new PackageID(new ArrayList<>(), version);
-        PackageEntity pkgEntity = this.programRepo.loadPackage(pkgId, sourcePkg);
-        log("* Package Entity: " + pkgEntity);
-
-        //BPackageSymbol pSymbol;
-        if (pkgEntity.getKind() == PackageEntity.Kind.SOURCE) {
-            BLangPackage pkgNode = this.sourceCompile((PackageSource) pkgEntity);
-            return pkgNode;
-
-            //pSymbol = symbolEnter.definePackage(pkgNode);
-            //packages.put(pkgId, pSymbol);
-        } else {
-            // This is a compiled package.
-            //pSymbol = null;
-            return null;
-        }
-
-        //return pSymbol;
+        return pkgNode;
     }
 
     private BLangPackage sourceCompile(PackageSource pkgSource) {
@@ -145,9 +114,19 @@ public class PackageLoader {
         printer.println(obj);
     }
 
-    public PackageRepository loadFSProgramRepository(Path basePath) {
-        return new CompositePackageRepository(this.loadSystemRepository(), this.loadUserRepository(),
-                new FSPackageRepository(basePath));
+    private void loadPackageRepository(CompilerContext context) {
+        // Initialize program dir repository a.k.a entry package repository
+        PackageRepository programRepo = context.get(PackageRepository.class);
+        if (programRepo == null) {
+            // create the default program repo
+            String sourceRoot = options.get(SOURCE_ROOT);
+            programRepo = new LocalFSPackageRepository(sourceRoot);
+        }
+
+        this.packageRepo = new CompositePackageRepository(
+                this.loadSystemRepository(),
+                this.loadUserRepository(),
+                programRepo);
     }
 
     private PackageRepository loadSystemRepository() {

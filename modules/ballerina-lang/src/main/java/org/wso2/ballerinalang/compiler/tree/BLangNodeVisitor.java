@@ -17,8 +17,17 @@
 */
 package org.wso2.ballerinalang.compiler.tree;
 
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangAnnotAttachmentAttribute;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangAnnotAttachmentAttributeValue;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangLiteral;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangVariableReference;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLAttribute;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLCommentLiteral;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLElementLiteral;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLProcInsLiteral;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLQName;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLQuotedString;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLTextLiteral;
 import org.wso2.ballerinalang.compiler.tree.statements.BLanXMLNSStatement;
 import org.wso2.ballerinalang.compiler.tree.statements.BLangAbort;
 import org.wso2.ballerinalang.compiler.tree.statements.BLangAssignment;
@@ -37,6 +46,7 @@ import org.wso2.ballerinalang.compiler.tree.statements.BLangVariableDef;
 import org.wso2.ballerinalang.compiler.tree.statements.BLangWhile;
 import org.wso2.ballerinalang.compiler.tree.statements.BlangTransform;
 import org.wso2.ballerinalang.compiler.tree.types.BLangArrayType;
+import org.wso2.ballerinalang.compiler.tree.types.BLangBuiltInRefTypeNode;
 import org.wso2.ballerinalang.compiler.tree.types.BLangConstrainedType;
 import org.wso2.ballerinalang.compiler.tree.types.BLangUserDefinedType;
 import org.wso2.ballerinalang.compiler.tree.types.BLangValueType;
@@ -90,6 +100,10 @@ public abstract class BLangNodeVisitor {
         throw new AssertionError();
     }
 
+    public void visit(BLangEnum enumNode) {
+        throw new AssertionError();
+    }
+
     public void visit(BLangVariable varNode) {
         throw new AssertionError();
     }
@@ -102,10 +116,21 @@ public abstract class BLangNodeVisitor {
         throw new AssertionError();
     }
 
+    public void visit(BLangAnnotAttribute bLangAnnotationAttribute) {
+        throw new AssertionError();
+    }
+
     public void visit(BLangAnnotationAttachment annAttachmentNode) {
         throw new AssertionError();
     }
 
+    public void visit(BLangAnnotAttachmentAttributeValue bLangAnnotAttributeValue) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangAnnotAttachmentAttribute bLangAnnotAttachmentAttribute) {
+        throw new AssertionError();
+    }
 
     // Statements
     public void visit(BLangBlockStmt blockNode) {
@@ -186,12 +211,44 @@ public abstract class BLangNodeVisitor {
         throw new AssertionError();
     }
 
+    public void visit(BLangXMLQName bLangXMLQName) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangXMLAttribute bLangXMLAttribute) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangXMLElementLiteral bLangXMLElementLiteral) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangXMLTextLiteral bLangXMLTextLiteral) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangXMLCommentLiteral bLangXMLCommentLiteral) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangXMLProcInsLiteral bLangXMLProcInsLiteral) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangXMLQuotedString bLangXMLQuotedString) {
+        throw new AssertionError();
+    }
+
     // Type nodes
     public void visit(BLangValueType valueType) {
         throw new AssertionError();
     }
 
     public void visit(BLangArrayType arrayType) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangBuiltInRefTypeNode builtInRefType) {
         throw new AssertionError();
     }
 

@@ -15,14 +15,12 @@
 *  specific language governing permissions and limitations
 *  under the License.
 */
-package org.ballerinalang.model.symbols;
-
-import java.util.List;
+package org.wso2.ballerinalang.compiler.util;
 
 /**
  * @since 0.94
  */
-public interface StructSymbol extends TypeSymbol {
-
-    List<? extends VariableSymbol> getFields();
+public enum QuoteType {
+    SINGLE_QUOTE, 
+    DOUBLE_QUOTE;
 }

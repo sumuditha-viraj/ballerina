@@ -20,8 +20,9 @@ package org.wso2.ballerinalang.compiler.semantics.model;
 
 import org.ballerinalang.model.elements.PackageID;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BPackageSymbol;
+import org.wso2.ballerinalang.compiler.semantics.model.symbols.BSymbol;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BTypeSymbol;
-import org.wso2.ballerinalang.compiler.semantics.model.symbols.SymbolKinds;
+import org.wso2.ballerinalang.compiler.semantics.model.symbols.SymbolTags;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BNoType;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BType;
 import org.wso2.ballerinalang.compiler.util.CompilerContext;
@@ -37,6 +38,7 @@ import static org.ballerinalang.model.types.TypeKind.INT;
 import static org.ballerinalang.model.types.TypeKind.JSON;
 import static org.ballerinalang.model.types.TypeKind.STRING;
 import static org.ballerinalang.model.types.TypeKind.XML;
+import static org.wso2.ballerinalang.compiler.semantics.model.symbols.SymbolTags.NIL;
 
 /**
  * @since 0.94
@@ -47,7 +49,7 @@ public class SymbolTable {
             new CompilerContext.Key<>();
 
     public final BPackageSymbol rootPkg;
-
+    public final BSymbol notFoundSymbol;
     public final Scope rootScope;
 
     public final BType intType = new BType(TypeTags.INT, null);
@@ -83,6 +85,7 @@ public class SymbolTable {
         this.rootPkg = new BPackageSymbol(PackageID.EMPTY, null);
         this.rootScope = new Scope(rootPkg);
         this.rootPkg.scope = this.rootScope;
+        this.notFoundSymbol = new BSymbol(NIL, Names.EMPTY, noType, rootPkg);
 
         // Initialize built-in types in Ballerina
         initializeType(intType, INT.typeName());
@@ -100,7 +103,7 @@ public class SymbolTable {
     }
 
     private void initializeType(BType type, Name name) {
-        BTypeSymbol tSymbol = new BTypeSymbol(SymbolKinds.TYPE, name, type, rootPkg);
+        BTypeSymbol tSymbol = new BTypeSymbol(SymbolTags.TYPE, name, type, rootPkg);
         type.tsymbol = tSymbol;
         rootScope.define(name, tSymbol);
     }

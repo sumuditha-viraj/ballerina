@@ -15,31 +15,17 @@
 *  specific language governing permissions and limitations
 *  under the License.
 */
-package org.ballerinalang.model.tree;
-
-import org.ballerinalang.model.tree.statements.BlockNode;
+package org.ballerinalang.model.tree.expressions;
 
 import java.util.List;
 
 /**
  * @since 0.94
  */
-public interface InvocableNode extends AnnotatableNode {
-    
-    IdentifierNode getName();
+public interface XMLQuotedStringNode extends ExpressionNode {
 
-    void setName(IdentifierNode name);
-    
-    List<? extends VariableNode> getParameters();
-    
-    void addParameter(VariableNode param);
-    
-    List<? extends VariableNode> getReturnParameters();
-    
-    void addReturnParameter(VariableNode retParam);
-    
-    BlockNode getBody();
-    
-    void setBody(BlockNode body);
-    
+    List<ExpressionNode> getTextFragments();
+
+    void addTextFragment(ExpressionNode textFragment);
+
 }

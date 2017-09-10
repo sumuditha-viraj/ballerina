@@ -36,7 +36,7 @@ public class BLangArrayLiteral extends BLangExpression implements ArrayLiteralNo
 
     @Override
     public NodeKind getKind() {
-        return NodeKind.ARRAY_LITERAL;
+        return NodeKind.ARRAY_LITERAL_EXPR;
     }
 
     @Override

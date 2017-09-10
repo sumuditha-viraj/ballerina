@@ -17,21 +17,27 @@
 */
 package org.wso2.ballerinalang.compiler.semantics.analyzer;
 
+import org.ballerinalang.model.types.TypeKind;
 import org.wso2.ballerinalang.compiler.semantics.model.Scope;
 import org.wso2.ballerinalang.compiler.semantics.model.Scope.ScopeEntry;
 import org.wso2.ballerinalang.compiler.semantics.model.SymbolEnv;
 import org.wso2.ballerinalang.compiler.semantics.model.SymbolTable;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BSymbol;
+import org.wso2.ballerinalang.compiler.semantics.model.symbols.SymbolTags;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BArrayType;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BType;
 import org.wso2.ballerinalang.compiler.tree.BLangNodeVisitor;
 import org.wso2.ballerinalang.compiler.tree.types.BLangArrayType;
+import org.wso2.ballerinalang.compiler.tree.types.BLangBuiltInRefTypeNode;
 import org.wso2.ballerinalang.compiler.tree.types.BLangConstrainedType;
 import org.wso2.ballerinalang.compiler.tree.types.BLangType;
 import org.wso2.ballerinalang.compiler.tree.types.BLangUserDefinedType;
 import org.wso2.ballerinalang.compiler.tree.types.BLangValueType;
 import org.wso2.ballerinalang.compiler.util.CompilerContext;
+import org.wso2.ballerinalang.compiler.util.Name;
 import org.wso2.ballerinalang.compiler.util.Names;
+import org.wso2.ballerinalang.compiler.util.diagnotic.DiagnosticLog;
+import org.wso2.ballerinalang.compiler.util.diagnotic.DiagnosticPos;
 
 import static org.wso2.ballerinalang.compiler.semantics.model.Scope.NOT_FOUND_ENTRY;
 
@@ -44,9 +50,10 @@ public class SymbolResolver extends BLangNodeVisitor {
 
     private SymbolTable symTable;
     private Names names;
+    private DiagnosticLog dlog;
 
     private SymbolEnv env;
-    private BType result;
+    private BType resultType;
     private String errMsgKey;
 
     public static SymbolResolver getInstance(CompilerContext context) {
@@ -63,39 +70,41 @@ public class SymbolResolver extends BLangNodeVisitor {
 
         this.symTable = SymbolTable.getInstance(context);
         this.names = Names.getInstance(context);
+        this.dlog = DiagnosticLog.getInstance(context);
     }
 
-    // Type nodes
-    public void visit(BLangValueType valueType) {
-        ScopeEntry entry = symTable.rootScope.lookup(names.fromTypeKind(valueType.typeKind));
-        if (entry == NOT_FOUND_ENTRY) {
-            // TODO Handle error "unknown.type"
+
+    // visit type nodes
+
+    public void visit(BLangValueType valueTypeNode) {
+        visitBuiltInTypeNode(valueTypeNode.pos, valueTypeNode.typeKind);
+    }
+
+    public void visit(BLangBuiltInRefTypeNode builtInRefType) {
+        visitBuiltInTypeNode(builtInRefType.pos, builtInRefType.typeKind);
+    }
+
+    public void visit(BLangArrayType arrayTypeNode) {
+        // The value of the dimensions field should always be >= 1
+        resultType = resolveTypeNode(arrayTypeNode.elemtype, env, errMsgKey);
+        for (int i = 0; i < arrayTypeNode.dimensions; i++) {
+            resultType = new BArrayType(resultType);
         }
-
-        result = entry.symbol.type;
     }
 
-    public void visit(BLangArrayType arrayType) {
-        BType eType = resolveTypeNode(arrayType.etype, env, errMsgKey);
-        result = new BArrayType(eType);
-    }
-
-    public void visit(BLangConstrainedType constrainedType) {
+    public void visit(BLangConstrainedType constrainedTypeNode) {
         throw new AssertionError();
     }
 
-    public void visit(BLangUserDefinedType userDefinedType) {
+    public void visit(BLangUserDefinedType userDefinedTypeNode) {
         throw new AssertionError();
     }
 
-    boolean checkForUniqueSymbol(BSymbol symbol, Scope scope) {
-        ScopeEntry entry = scope.lookup(symbol.name);
-        while (entry != NOT_FOUND_ENTRY) {
-            // Found a scope entry with a symbol with the same name as this symbol
-            if (entry.symbol.kind == symbol.kind) {
-                //TODO log an error out.println("duplicate variable definition");
-                return false;
-            }
+
+    boolean checkForUniqueSymbol(DiagnosticPos pos, BSymbol symbol, Scope scope) {
+        if (lookupSymbol(scope, symbol.name, symbol.tag) != symTable.notFoundSymbol) {
+            dlog.error(pos, "duplicate.symbol", symbol.name);
+            return false;
         }
 
         return true;
@@ -116,6 +125,28 @@ public class SymbolResolver extends BLangNodeVisitor {
         this.env = prevEnv;
         this.errMsgKey = preErrMsgKey;
 
-        return result;
+        return resultType;
+    }
+
+    BSymbol lookupSymbol(Scope scope, Name name, int expSymbolTag) {
+        ScopeEntry entry = scope.lookup(name);
+        while (entry != NOT_FOUND_ENTRY) {
+            if (entry.symbol.tag == expSymbolTag) {
+                return entry.symbol;
+            }
+            entry = entry.next;
+        }
+
+        return symTable.notFoundSymbol;
+    }
+
+    private void visitBuiltInTypeNode(DiagnosticPos pos, TypeKind typeKind) {
+        Name typeName = names.fromTypeKind(typeKind);
+        BSymbol typeSymbol = lookupSymbol(symTable.rootScope, typeName, SymbolTags.TYPE);
+        if (typeSymbol == symTable.notFoundSymbol) {
+            dlog.error(pos, errMsgKey, typeName);
+        }
+
+        resultType = typeSymbol.type;
     }
 }
