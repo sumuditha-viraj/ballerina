@@ -598,6 +598,16 @@ public interface BallerinaParserListener extends ParseTreeListener {
 	 */
 	void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link BallerinaParser#connectorVarDefStatement}.
+	 * @param ctx the parse tree
+	 */
+	void enterConnectorVarDefStatement(BallerinaParser.ConnectorVarDefStatementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BallerinaParser#connectorVarDefStatement}.
+	 * @param ctx the parse tree
+	 */
+	void exitConnectorVarDefStatement(BallerinaParser.ConnectorVarDefStatementContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link BallerinaParser#mapStructLiteral}.
 	 * @param ctx the parse tree
 	 */
@@ -1396,6 +1406,18 @@ public interface BallerinaParserListener extends ParseTreeListener {
 	 */
 	void exitUnaryExpression(BallerinaParser.UnaryExpressionContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code ternaryExpression}
+	 * labeled alternative in {@link BallerinaParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void enterTernaryExpression(BallerinaParser.TernaryExpressionContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ternaryExpression}
+	 * labeled alternative in {@link BallerinaParser#expression}.
+	 * @param ctx the parse tree
+	 */
+	void exitTernaryExpression(BallerinaParser.TernaryExpressionContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code binaryPowExpression}
 	 * labeled alternative in {@link BallerinaParser#expression}.
 	 * @param ctx the parse tree
@@ -1498,12 +1520,12 @@ public interface BallerinaParserListener extends ParseTreeListener {
 	 */
 	void exitXmlItem(BallerinaParser.XmlItemContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link BallerinaParser#children}.
+	 * Enter a parse tree produced by {@link BallerinaParser#content}.
 	 * @param ctx the parse tree
 	 */
 	void enterContent(BallerinaParser.ContentContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link BallerinaParser#children}.
+	 * Exit a parse tree produced by {@link BallerinaParser#content}.
 	 * @param ctx the parse tree
 	 */
 	void exitContent(BallerinaParser.ContentContext ctx);

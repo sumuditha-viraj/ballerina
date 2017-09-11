@@ -39,6 +39,7 @@ public enum NodeKind {
     CONTINUE,
     ENUM,
     EXPRESSION_STATEMENT,
+    FORKJOIN,
     FUNCTION,
     IDENTIFIER,
     IF,
@@ -59,6 +60,9 @@ public enum NodeKind {
     VARIABLE,
     VARIABLE_REF,
     WHILE,
+    WORKER,
+    WORKER_SEND,
+    WORKER_RECEIVE,
     XMLNS,
     /* Expressions */
     INVOCATION,
@@ -66,11 +70,15 @@ public enum NodeKind {
     RECODE_LITERAL_EXPR,
     BINARY_EXPR,
     UNARY_EXPR,
+    CONNECTOR_INIT_EXPR,
     LAMBDA,
     XML_QNAME,
     XML_ELEMENT_LITERAL,
     XML_TEXT_LITERAL,
     XML_COMMENT_LITERAL,
     XML_PI_LITERAL,
-    XML_QUOTED_STRING
+    XML_QUOTED_STRING,
+    TYPE_CAST_EXPR,
+    TYPE_CONVERSION_EXPR,
+    TERNARY_EXPR
 }

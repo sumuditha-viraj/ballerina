@@ -22,7 +22,7 @@ import org.ballerinalang.model.symbols.EnumSymbol;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BType;
 import org.wso2.ballerinalang.compiler.util.Name;
 
-import static org.wso2.ballerinalang.compiler.semantics.model.symbols.SymbolTags.ENUM;
+import static org.wso2.ballerinalang.compiler.semantics.model.symbols.SymTag.ENUM;
 
 /**
  * @since 0.94

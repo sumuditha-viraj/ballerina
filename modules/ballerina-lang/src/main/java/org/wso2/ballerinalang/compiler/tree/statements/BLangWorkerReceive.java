@@ -15,37 +15,50 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package org.wso2.ballerinalang.compiler.tree.expressions;
+package org.wso2.ballerinalang.compiler.tree.statements;
 
+import org.ballerinalang.model.tree.IdentifierNode;
 import org.ballerinalang.model.tree.NodeKind;
-import org.ballerinalang.model.tree.OperatorKind;
 import org.ballerinalang.model.tree.expressions.ExpressionNode;
-import org.ballerinalang.model.tree.expressions.UnaryExpressionNode;
+import org.ballerinalang.model.tree.statements.WorkerReceiveNode;
 import org.wso2.ballerinalang.compiler.tree.BLangNodeVisitor;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
- * Implementation of {@link UnaryExpressionNode}.
+ * Implementation of {@link BLangWorkerReceive}.
  *
  * @since 0.94
  */
-public class BLangUnaryExpression extends BLangExpression implements UnaryExpressionNode {
+public class BLangWorkerReceive extends BLangStatement implements WorkerReceiveNode {
 
-    public ExpressionNode expressionNode;
-    public OperatorKind operator;
+    public List<ExpressionNode> expressions;
+    public IdentifierNode workerIdentifier;
 
-    @Override
-    public ExpressionNode getExpression() {
-        return expressionNode;
+    public BLangWorkerReceive() {
+        this.expressions = new ArrayList<>();
     }
 
     @Override
-    public OperatorKind getOperatorKind() {
-        return operator;
+    public List<ExpressionNode> getExpressions() {
+        return expressions;
+    }
+
+    @Override
+    public IdentifierNode getWorkerName() {
+        return workerIdentifier;
+    }
+
+    @Override
+    public void setWorkerName(IdentifierNode identifierNode) {
+        this.workerIdentifier = identifierNode;
     }
 
     @Override
     public NodeKind getKind() {
-        return NodeKind.UNARY_EXPR;
+        return NodeKind.WORKER_RECEIVE;
     }
 
     @Override
@@ -54,6 +67,6 @@ public class BLangUnaryExpression extends BLangExpression implements UnaryExpres
 
     @Override
     public String toString() {
-        return String.valueOf(operator) + String.valueOf(expressionNode);
+        return "BLangWorkerReceive: " + Arrays.toString(this.expressions.toArray()) + " <- " + workerIdentifier;
     }
 }

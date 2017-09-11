@@ -19,8 +19,16 @@ package org.wso2.ballerinalang.compiler.tree;
 
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangAnnotAttachmentAttribute;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangAnnotAttachmentAttributeValue;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangBinaryExpr;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangFieldBasedAccess;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangIndexBasedAccess;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangInvocation;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangLiteral;
-import org.wso2.ballerinalang.compiler.tree.expressions.BLangVariableReference;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangSimpleVarRef;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangTernaryExpr;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangTypeCast;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangTypeConversion;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangUnaryExpr;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLAttribute;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLCommentLiteral;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangXMLElementLiteral;
@@ -203,11 +211,44 @@ public abstract class BLangNodeVisitor {
 
 
     // Expressions
-    public void visit(BLangLiteral literalNode) {
+
+    public void visit(BLangLiteral literalExpr) {
         throw new AssertionError();
     }
 
-    public void visit(BLangVariableReference varRefNode) {
+    public void visit(BLangSimpleVarRef varRefExpr) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangFieldBasedAccess fieldAccessExpr) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangIndexBasedAccess indexAccessExpr) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangInvocation invocationExpr) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangTernaryExpr ternaryExpr) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangBinaryExpr binaryExpr) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangUnaryExpr unaryExpr) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangTypeCast typeCastNode) {
+        throw new AssertionError();
+    }
+
+    public void visit(BLangTypeConversion typeConversionNode) {
         throw new AssertionError();
     }
 
@@ -240,6 +281,7 @@ public abstract class BLangNodeVisitor {
     }
 
     // Type nodes
+
     public void visit(BLangValueType valueType) {
         throw new AssertionError();
     }

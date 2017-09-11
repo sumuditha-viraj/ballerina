@@ -22,6 +22,7 @@ import org.ballerinalang.model.tree.NodeKind;
 import org.ballerinalang.model.tree.expressions.ExpressionNode;
 import org.ballerinalang.model.tree.expressions.InvocationNode;
 import org.ballerinalang.model.tree.expressions.VariableReferenceNode;
+import org.wso2.ballerinalang.compiler.tree.BLangNodeVisitor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +38,10 @@ public class BLangInvocation extends BLangVariableReference implements Invocatio
     public IdentifierNode packIdentifier, functionName;
     public List<ExpressionNode> argsExpressions = new ArrayList<>();
     public VariableReferenceNode variableReferenceNode;
+
+    public boolean isMultiReturnExpr() {
+        return true;
+    }
 
     @Override
     public IdentifierNode getPackageIdentifier() {
@@ -80,5 +85,10 @@ public class BLangInvocation extends BLangVariableReference implements Invocatio
         }
         br.append(")");
         return br.toString();
+    }
+
+    @Override
+    public void accept(BLangNodeVisitor visitor) {
+        visitor.visit(this);
     }
 }
