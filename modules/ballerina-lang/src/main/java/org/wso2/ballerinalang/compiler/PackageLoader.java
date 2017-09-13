@@ -149,4 +149,28 @@ public class PackageLoader {
         this.loadExtensionRepository();
         return null;
     }
+
+    public BLangPackage getModel(String sourcePkg) {
+        // TODO Implement the support for loading a source package
+        BLangIdentifier version = new BLangIdentifier();
+        version.setValue("0.0.0");
+        PackageID pkgId = new PackageID(new ArrayList<>(), version);
+        PackageEntity pkgEntity = this.packageRepo.loadPackage(pkgId, sourcePkg);
+        log("* Package Entity: " + pkgEntity);
+
+        //BPackageSymbol pSymbol;
+        if (pkgEntity.getKind() == PackageEntity.Kind.SOURCE) {
+            BLangPackage pkgNode = this.sourceCompile((PackageSource) pkgEntity);
+            return pkgNode;
+
+            //pSymbol = symbolEnter.definePackage(pkgNode);
+            //packages.put(pkgId, pSymbol);
+        } else {
+            // This is a compiled package.
+            //pSymbol = null;
+            return null;
+        }
+
+        //return pSymbol;
+    }
 }
