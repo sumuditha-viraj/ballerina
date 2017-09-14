@@ -23,6 +23,7 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.ballerinalang.model.Whitespace;
 import org.ballerinalang.model.tree.CompilationUnitNode;
 import org.wso2.ballerinalang.compiler.parser.antlr4.BallerinaParser;
 import org.wso2.ballerinalang.compiler.parser.antlr4.BallerinaParserBaseListener;
@@ -33,6 +34,7 @@ import org.wso2.ballerinalang.compiler.util.diagnotic.DiagnosticPos;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -43,6 +45,9 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     private BLangPackageBuilder pkgBuilder;
     private BDiagnosticSource diagnosticSrc;
+
+    private List<String> pkgNameComps;
+    private String pkgVersion;
 
     public BLangParserListener(CompilationUnitNode compUnit, BDiagnosticSource diagnosticSource) {
         this.pkgBuilder = new BLangPackageBuilder(compUnit);
@@ -56,7 +61,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitParameter(BallerinaParser.ParameterContext ctx) {
-        this.pkgBuilder.addVar(getCurrentPos(ctx), ctx.Identifier().getText(),
+        this.pkgBuilder.addVar(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
                 false, ctx.annotationAttachment().size());
     }
 
@@ -84,26 +89,8 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPackageDeclaration(BallerinaParser.PackageDeclarationContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
     public void exitPackageDeclaration(BallerinaParser.PackageDeclarationContext ctx) {
-        this.pkgBuilder.populatePackageDeclaration();
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterPackageName(BallerinaParser.PackageNameContext ctx) {
+        this.pkgBuilder.setPackageDeclaration(getCurrentPos(ctx), this.pkgNameComps, this.pkgVersion);
     }
 
     /**
@@ -113,24 +100,9 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitPackageName(BallerinaParser.PackageNameContext ctx) {
-        List<String> nameComps = new ArrayList<>();
-        ctx.Identifier().stream().forEach(e -> nameComps.add(e.getText()));
-        String version;
-        if (ctx.version() != null) {
-            version = ctx.version().Identifier().getText();
-        } else {
-            version = null;
-        }
-        this.pkgBuilder.addPackageId(nameComps, version);
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterImportDeclaration(BallerinaParser.ImportDeclarationContext ctx) {
+        this.pkgNameComps = new ArrayList<>();
+        ctx.Identifier().forEach(e -> pkgNameComps.add(e.getText()));
+        this.pkgVersion = ctx.version() != null ? ctx.version().Identifier().getText() : null;
     }
 
     /**
@@ -140,13 +112,9 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitImportDeclaration(BallerinaParser.ImportDeclarationContext ctx) {
-        String alias;
-        if (ctx.Identifier() != null) {
-            alias = ctx.Identifier().getText();
-        } else {
-            alias = null;
-        }
-        this.pkgBuilder.addImportPackageDeclaration(alias);
+        String alias = ctx.Identifier() != null ? ctx.Identifier().getText() : null;
+        this.pkgBuilder.addImportPackageDeclaration(getCurrentPos(ctx), getWS(ctx),
+                this.pkgNameComps, this.pkgVersion, alias);
     }
 
     /**
@@ -244,7 +212,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitCallableUnitBody(BallerinaParser.CallableUnitBodyContext ctx) {
-        this.pkgBuilder.endCallableUnitBody();
+        this.pkgBuilder.endCallableUnitBody(getWS(ctx));
     }
 
     /**
@@ -264,7 +232,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitFunctionDefinition(BallerinaParser.FunctionDefinitionContext ctx) {
-        this.pkgBuilder.endFunctionDef();
+        this.pkgBuilder.endFunctionDef(getWS(ctx));
     }
 
     @Override
@@ -274,7 +242,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitLambdaFunction(BallerinaParser.LambdaFunctionContext ctx) {
-        this.pkgBuilder.addLambdaFunctionDef(getCurrentPos(ctx), ctx.parameterList() != null,
+        this.pkgBuilder.addLambdaFunctionDef(getCurrentPos(ctx), getWS(ctx), ctx.parameterList() != null,
                 ctx.returnParameters() != null,
                 ctx.returnParameters() != null && ctx.returnParameters().typeList() != null);
     }
@@ -295,7 +263,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitCallableUnitSignature(BallerinaParser.CallableUnitSignatureContext ctx) {
-        this.pkgBuilder.endCallableUnitSignature(ctx.Identifier().getText(),
+        this.pkgBuilder.endCallableUnitSignature(getWS(ctx), ctx.Identifier().getText(),
                 ctx.parameterList() != null, ctx.returnParameters() != null,
                 ctx.returnParameters() != null ? ctx.returnParameters().typeList() != null : false);
     }
@@ -476,7 +444,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitGlobalVariableDefinition(BallerinaParser.GlobalVariableDefinitionContext ctx) {
-        this.pkgBuilder.addGlobalVariable(getCurrentPos(ctx),
+        this.pkgBuilder.addGlobalVariable(getCurrentPos(ctx), getWS(ctx),
                 ctx.Identifier().getText(), ctx.expression() != null);
     }
 
@@ -749,7 +717,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitConstantDefinition(BallerinaParser.ConstantDefinitionContext ctx) {
-        this.pkgBuilder.addConstVariable(getCurrentPos(ctx), ctx.Identifier().getText());
+        this.pkgBuilder.addConstVariable(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText());
     }
 
     @Override
@@ -795,7 +763,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
             return;
         }
         // This is 'any' type
-        this.pkgBuilder.addValueType(getCurrentPos(ctx), ctx.getChild(0).getText());
+        this.pkgBuilder.addValueType(getCurrentPos(ctx), getWS(ctx), ctx.getChild(0).getText());
     }
 
     @Override
@@ -810,7 +778,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitValueTypeName(BallerinaParser.ValueTypeNameContext ctx) {
-        this.pkgBuilder.addValueType(getCurrentPos(ctx), ctx.getText());
+        this.pkgBuilder.addValueType(getCurrentPos(ctx), getWS(ctx), ctx.getText());
     }
 
     @Override
@@ -1906,7 +1874,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitFieldDefinition(BallerinaParser.FieldDefinitionContext ctx) {
-        this.pkgBuilder.addVar(getCurrentPos(ctx), ctx.Identifier().getText(),
+        this.pkgBuilder.addVar(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
                 ctx.simpleLiteral() != null, 0);
     }
 
@@ -2362,6 +2330,10 @@ public class BLangParserListener extends BallerinaParserBaseListener {
         }
 
         return new DiagnosticPos(diagnosticSrc, startLine, endLine, startCol, endCol);
+    }
+
+    protected Set<Whitespace> getWS(ParserRuleContext ctx) {
+        return null;
     }
 
     private Stack<String> getTemplateTextFragments(List<TerminalNode> nodes) {
