@@ -54,6 +54,7 @@ import org.ballerinalang.model.tree.statements.StatementNode;
 import org.ballerinalang.model.tree.statements.TransactionNode;
 import org.ballerinalang.model.tree.statements.VariableDefinitionNode;
 import org.ballerinalang.model.tree.types.TypeNode;
+import org.wso2.ballerinalang.compiler.tree.BLangAction;
 import org.wso2.ballerinalang.compiler.tree.BLangAnnotAttribute;
 import org.wso2.ballerinalang.compiler.tree.BLangAnnotation;
 import org.wso2.ballerinalang.compiler.tree.BLangAnnotationAttachment;
@@ -360,7 +361,7 @@ public class BLangPackageBuilder {
         lambdaExpr.pos = pos;
         addExpressionNode(lambdaExpr);
         // TODO: is null correct here
-        endFunctionDef(null);
+        endFunctionDef(pos, null, false, false, true);
     }
 
     public void addVariableDefStatement(DiagnosticPos pos, String identifier, boolean exprAvailable) {
@@ -630,9 +631,27 @@ public class BLangPackageBuilder {
         ternaryExpr.expr = (BLangExpression) exprNodeStack.pop();
     }
 
-    public void endFunctionDef(Set<Whitespace> ws) {
-        FunctionNode function = (FunctionNode) this.invokableNodeStack.pop();
+    public void endFunctionDef(DiagnosticPos pos,
+                               Set<Whitespace> ws,
+                               boolean publicFunc,
+                               boolean nativeFunc,
+                               boolean bodyExists) {
+        BLangFunction function = (BLangFunction) this.invokableNodeStack.pop();
+        function.pos = pos;
         function.addWS(ws);
+
+        if (publicFunc) {
+            function.flagSet.add(Flag.PUBLIC);
+        }
+
+        if (nativeFunc) {
+            function.flagSet.add(Flag.NATIVE);
+        }
+
+        if (!bodyExists) {
+            function.body = null;
+        }
+
         this.compUnit.addTopLevelNode(function);
     }
 
@@ -731,7 +750,9 @@ public class BLangPackageBuilder {
         List<BLangIdentifier> pkgNameComps = new ArrayList<>();
         nameComps.forEach(e -> pkgNameComps.add((BLangIdentifier) this.createIdentifier(e)));
         BLangIdentifier versionNode = (BLangIdentifier) this.createIdentifier(version);
-        BLangIdentifier aliasNode = (BLangIdentifier) this.createIdentifier(alias);
+        BLangIdentifier aliasNode = (alias != null && !alias.isEmpty()) ?
+                (BLangIdentifier) this.createIdentifier(alias) :
+                pkgNameComps.get(pkgNameComps.size() - 1);
 
         BLangImportPackage importDcl = (BLangImportPackage) TreeBuilder.createImportPackageNode();
         importDcl.pos = pos;
@@ -758,14 +779,26 @@ public class BLangPackageBuilder {
         return var;
     }
 
-    public void addGlobalVariable(DiagnosticPos pos, Set<Whitespace> ws, String identifier, boolean exprAvailable) {
-        VariableNode var = this.generateBasicVarNode(pos, ws, identifier, exprAvailable);
+    public void addGlobalVariable(DiagnosticPos pos,
+                                  Set<Whitespace> ws,
+                                  String identifier,
+                                  boolean exprAvailable,
+                                  boolean publicVar) {
+        BLangVariable var = (BLangVariable) this.generateBasicVarNode(pos, ws, identifier, exprAvailable);
+        if (publicVar) {
+            var.flagSet.add(Flag.PUBLIC);
+        }
+
         this.compUnit.addTopLevelNode(var);
     }
 
-    public void addConstVariable(DiagnosticPos pos, Set<Whitespace> ws, String identifier) {
-        VariableNode var = this.generateBasicVarNode(pos, ws, identifier, true);
-        var.addFlag(Flag.CONST);
+    public void addConstVariable(DiagnosticPos pos, Set<Whitespace> ws, String identifier, boolean publicVar) {
+        BLangVariable var = (BLangVariable) this.generateBasicVarNode(pos, ws, identifier, true);
+        var.flagSet.add(Flag.CONST);
+        if (publicVar) {
+            var.flagSet.add(Flag.PUBLIC);
+        }
+
         this.compUnit.addTopLevelNode(var);
     }
 
@@ -775,23 +808,31 @@ public class BLangPackageBuilder {
         this.structStack.add(structNode);
     }
 
-    public void endStructDef(DiagnosticPos pos, String identifier) {
+    public void endStructDef(DiagnosticPos pos, String identifier, boolean publicStruct) {
         BLangStruct structNode = (BLangStruct) this.structStack.pop();
         structNode.pos = pos;
         structNode.setName(this.createIdentifier(identifier));
+        if (publicStruct) {
+            structNode.flagSet.add(Flag.PUBLIC);
+        }
+
         this.varListStack.pop().forEach(structNode::addField);
         this.compUnit.addTopLevelNode(structNode);
     }
 
-    public void startEnumDef(DiagnosticPos currentPos) {
+    public void startEnumDef(DiagnosticPos pos) {
         BLangEnum bLangEnum = (BLangEnum) TreeBuilder.createEnumNode();
-        bLangEnum.pos = currentPos;
+        bLangEnum.pos = pos;
         this.enumStack.add(bLangEnum);
     }
 
-    public void endEnumDef(String identifier) {
-        EnumNode enumNode = this.enumStack.pop();
-        enumNode.setName(this.createIdentifier(identifier));
+    public void endEnumDef(String identifier, boolean publicEnum) {
+        BLangEnum enumNode = (BLangEnum) this.enumStack.pop();
+        enumNode.name = (BLangIdentifier) this.createIdentifier(identifier);
+        if (publicEnum) {
+            enumNode.flags.add(Flag.PUBLIC);
+        }
+
         while (!this.identifierStack.empty()) {
             enumNode.addEnumField(this.identifierStack.pop());
         }
@@ -824,10 +865,14 @@ public class BLangPackageBuilder {
         this.actionNodeStack.add(new ArrayList<>());
     }
 
-    public void endConnectorDef(DiagnosticPos pos, String identifier) {
+    public void endConnectorDef(DiagnosticPos pos, String identifier, boolean publicCon) {
         BLangConnector connectorNode = (BLangConnector) this.connectorNodeStack.pop();
         connectorNode.pos = pos;
         connectorNode.setName(this.createIdentifier(identifier));
+        if (publicCon) {
+            connectorNode.flagSet.add(Flag.PUBLIC);
+        }
+
         this.compUnit.addTopLevelNode(connectorNode);
     }
 
@@ -843,8 +888,17 @@ public class BLangPackageBuilder {
         this.invokableNodeStack.push(actionNode);
     }
 
-    public void endActionDef(int annotCount) {
-        ActionNode actionNode = (ActionNode) this.invokableNodeStack.pop();
+    public void endActionDef(DiagnosticPos pos, int annotCount, boolean nativeAction, boolean bodyExists) {
+        BLangAction actionNode = (BLangAction) this.invokableNodeStack.pop();
+        actionNode.pos = pos;
+        if (nativeAction) {
+            actionNode.flagSet.add(Flag.NATIVE);
+        }
+
+        if (!bodyExists) {
+            actionNode.body = null;
+        }
+
         attachAnnotations(actionNode, annotCount);
         this.connectorNodeStack.peek().addAction(actionNode);
     }
