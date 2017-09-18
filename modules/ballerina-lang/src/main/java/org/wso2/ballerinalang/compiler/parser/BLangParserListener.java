@@ -1252,7 +1252,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitJoinClause(BallerinaParser.JoinClauseContext ctx) {
-        this.pkgBuilder.addJoinCause();
+        this.pkgBuilder.addJoinCause(ctx.Identifier().getText());
     }
 
     @Override
@@ -1894,7 +1894,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
         DiagnosticPos pos = getCurrentPos(ctx);
         if ((node = ctx.IntegerLiteral()) != null) {
-            this.pkgBuilder.addLiteralValue(pos, TypeTags.INT, Integer.parseInt(node.getText()));
+            this.pkgBuilder.addLiteralValue(pos, TypeTags.INT, Long.parseLong(node.getText()));
         } else if ((node = ctx.FloatingPointLiteral()) != null) {
             this.pkgBuilder.addLiteralValue(pos, TypeTags.FLOAT, Double.parseDouble(node.getText()));
         } else if ((node = ctx.BooleanLiteral()) != null) {
