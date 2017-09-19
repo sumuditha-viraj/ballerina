@@ -45,7 +45,11 @@ import org.wso2.ballerinalang.compiler.util.diagnotic.DiagnosticPos;
 import org.wso2.ballerinalang.util.Lists;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.wso2.ballerinalang.compiler.semantics.model.Scope.NOT_FOUND_ENTRY;
 
@@ -207,6 +211,19 @@ public class SymbolResolver extends BLangNodeVisitor {
         }
 
         return symTable.notFoundSymbol;
+    }
+
+    public Map<Name, ScopeEntry> lookupAllVisibleSymbols(SymbolEnv env) {
+        Map<Name, ScopeEntry> visibleEntries;
+
+        if (env.enclEnv == null) {
+            visibleEntries = new HashMap<>();
+        } else {
+            visibleEntries = Stream.concat(env.scope.entries.entrySet().stream(), lookupAllVisibleSymbols(env.enclEnv).entrySet().stream())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        return visibleEntries;
     }
 
 
