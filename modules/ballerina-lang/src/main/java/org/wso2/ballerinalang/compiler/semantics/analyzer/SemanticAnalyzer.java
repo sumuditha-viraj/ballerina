@@ -29,6 +29,7 @@ import org.wso2.ballerinalang.compiler.semantics.model.symbols.BSymbol;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.SymTag;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.Symbols;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BType;
+import org.wso2.ballerinalang.compiler.tree.BLangAnnotation;
 import org.wso2.ballerinalang.compiler.tree.BLangConnector;
 import org.wso2.ballerinalang.compiler.tree.BLangFunction;
 import org.wso2.ballerinalang.compiler.tree.BLangImportPackage;
@@ -40,6 +41,7 @@ import org.wso2.ballerinalang.compiler.tree.BLangStruct;
 import org.wso2.ballerinalang.compiler.tree.BLangVariable;
 import org.wso2.ballerinalang.compiler.tree.BLangWorker;
 import org.wso2.ballerinalang.compiler.tree.BLangXMLNS;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangExpression;
 import org.wso2.ballerinalang.compiler.tree.statements.BLangAssignment;
 import org.wso2.ballerinalang.compiler.tree.statements.BLangBlockStmt;
 import org.wso2.ballerinalang.compiler.tree.statements.BLangCatch;
@@ -151,6 +153,9 @@ public class SemanticAnalyzer extends BLangNodeVisitor {
         BSymbol structSymbol = structNode.symbol;
         SymbolEnv structEnv = SymbolEnv.createPkgLevelSymbolEnv(structNode, structSymbol.scope, env);
         structNode.fields.forEach(field -> analyzeDef(field, structEnv));
+    }
+
+    public void visit(BLangAnnotation annotationNode) {
     }
 
     public void visit(BLangVariable varNode) {
@@ -350,9 +355,13 @@ public class SemanticAnalyzer extends BLangNodeVisitor {
         return success;
     }
     
+    private boolean isInvocationExpr(BLangExpression expr) {
+        return expr.getKind() == NodeKind.INVOCATION;
+    }
+    
     @Override
     public void visit(BLangReturn returnNode) {
-        if (returnNode.exprs.size() == 1) {
+        if (returnNode.exprs.size() == 1 && this.isInvocationExpr(returnNode.exprs.get(0))) {
             /* a single return expression can be expanded to match a multi-value return */
             this.typeChecker.checkExpr(returnNode.exprs.get(0), this.env, 
                     this.env.enclInvokable.getReturnParameters().stream()
