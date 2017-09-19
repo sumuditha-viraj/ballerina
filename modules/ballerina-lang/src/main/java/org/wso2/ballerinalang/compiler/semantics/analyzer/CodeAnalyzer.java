@@ -19,10 +19,6 @@ package org.wso2.ballerinalang.compiler.semantics.analyzer;
 
 import org.ballerinalang.model.tree.expressions.LiteralNode;
 import org.ballerinalang.util.diagnostic.DiagnosticCode;
-import org.wso2.ballerinalang.compiler.semantics.model.SymbolEnv;
-import org.wso2.ballerinalang.compiler.semantics.model.SymbolTable;
-import org.wso2.ballerinalang.compiler.semantics.model.symbols.BSymbol;
-import org.wso2.ballerinalang.compiler.semantics.model.symbols.SymTag;
 import org.wso2.ballerinalang.compiler.tree.BLangAction;
 import org.wso2.ballerinalang.compiler.tree.BLangAnnotAttribute;
 import org.wso2.ballerinalang.compiler.tree.BLangAnnotation;
@@ -94,7 +90,6 @@ import org.wso2.ballerinalang.compiler.tree.types.BLangConstrainedType;
 import org.wso2.ballerinalang.compiler.tree.types.BLangUserDefinedType;
 import org.wso2.ballerinalang.compiler.tree.types.BLangValueType;
 import org.wso2.ballerinalang.compiler.util.CompilerContext;
-import org.wso2.ballerinalang.compiler.util.Name;
 import org.wso2.ballerinalang.compiler.util.diagnotic.DiagnosticLog;
 
 /**
@@ -117,8 +112,6 @@ public class CodeAnalyzer extends BLangNodeVisitor {
     private boolean deadCode;
     private boolean unreachableCodeCheckDone;
     private DiagnosticLog dlog;
-    private SymbolResolver symResolver;
-    private SymbolTable symTable;
 
     public static CodeAnalyzer getInstance(CompilerContext context) {
         CodeAnalyzer codeGenerator = context.get(CODE_ANALYZER_KEY);
@@ -130,8 +123,6 @@ public class CodeAnalyzer extends BLangNodeVisitor {
 
     public CodeAnalyzer(CompilerContext context) {
         context.put(CODE_ANALYZER_KEY, this);
-        this.symTable = SymbolTable.getInstance(context);
-        this.symResolver = SymbolResolver.getInstance(context);
         this.dlog = DiagnosticLog.getInstance(context);
     }
     
@@ -171,8 +162,7 @@ public class CodeAnalyzer extends BLangNodeVisitor {
         funcNode.body.accept(this);
         /* the function returns, but none of the statements surely returns */
         if (functionReturns && !this.statementReturns) {
-            this.dlog.error(funcNode.pos, DiagnosticCode.FUNCTION_MUST_RETURN, 
-                    String.valueOf(funcNode.getReturnParameters()));
+            this.dlog.error(funcNode.pos, DiagnosticCode.FUNCTION_MUST_RETURN);
         }
         funcNode.workers.forEach(e -> e.accept(this));
     }
@@ -209,7 +199,6 @@ public class CodeAnalyzer extends BLangNodeVisitor {
     @Override
     public void visit(BLangBlockStmt blockNode) {
         blockNode.statements.forEach(e -> {
-            this.checkStatementExecutionValidity(blockNode);
             e.accept(this);
         });
     }
@@ -282,27 +271,6 @@ public class CodeAnalyzer extends BLangNodeVisitor {
         }
     }
     
-    private boolean workerExists(SymbolEnv env, String workerName) {
-        BSymbol symbol = this.symResolver.lookupSymbol(env, new Name(workerName), SymTag.WORKER);
-        return (symbol != this.symTable.notFoundSymbol);
-    }
-    
-    @Override
-    public void visit(BLangWorkerSend workerSendNode) {
-        String workerName = workerSendNode.workerIdentifier.getValue();
-        if (!this.workerExists(workerSendNode.env, workerName)) {
-            this.dlog.error(workerSendNode.pos, DiagnosticCode.UNDEFINED_WORKER, workerName);
-        }
-    }
-    
-    @Override
-    public void visit(BLangWorkerReceive workerReceiveNode) {
-        String workerName = workerReceiveNode.workerIdentifier.getValue();
-        if (!this.workerExists(workerReceiveNode.env, workerName)) {
-            this.dlog.error(workerReceiveNode.pos, DiagnosticCode.UNDEFINED_WORKER, workerName);
-        }
-    }
-    
     public void visit(BLangPackageDeclaration pkgDclNode) {
         /* ignore */
     }
@@ -368,11 +336,11 @@ public class CodeAnalyzer extends BLangNodeVisitor {
     }
 
     public void visit(BLangVariableDef varDefNode) {
-        /* ignore */
+        this.checkStatementExecutionValidity(varDefNode);
     }
 
     public void visit(BLangAssignment assignNode) {
-        /* ignore */
+        this.checkStatementExecutionValidity(assignNode);
     }
 
     public void visit(BLangAbort abortNode) {
@@ -392,11 +360,11 @@ public class CodeAnalyzer extends BLangNodeVisitor {
     }
 
     public void visit(BLanXMLNSStatement xmlnsStmtNode) {
-        /* ignore */
+        this.checkStatementExecutionValidity(xmlnsStmtNode);
     }
 
     public void visit(BLangExpressionStmt exprStmtNode) {
-        /* ignore */
+        this.checkStatementExecutionValidity(exprStmtNode);
     }
 
     public void visit(BLangComment commentNode) {
@@ -404,11 +372,11 @@ public class CodeAnalyzer extends BLangNodeVisitor {
     }
 
     public void visit(BLangTransaction transactionNode) {
-        /* ignore */
+        this.checkStatementExecutionValidity(transactionNode);
     }
 
     public void visit(BlangTransform transformNode) {
-        /* ignore */
+        this.checkStatementExecutionValidity(transformNode);
     }
 
     public void visit(BLangTryCatchFinally tryNode) {
@@ -499,7 +467,14 @@ public class CodeAnalyzer extends BLangNodeVisitor {
         /* ignore */
     }
 
-    // Type nodes
+    public void visit(BLangWorkerSend workerSendNode) {
+        /* ignore */
+    }
+
+    @Override
+    public void visit(BLangWorkerReceive workerReceiveNode) {
+        /* ignore */
+    }
 
     public void visit(BLangValueType valueType) {
         /* ignore */
