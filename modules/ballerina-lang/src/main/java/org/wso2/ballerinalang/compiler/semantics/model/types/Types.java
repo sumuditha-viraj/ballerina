@@ -15,15 +15,25 @@
 *  specific language governing permissions and limitations
 *  under the License.
 */
-package org.ballerinalang.model.tree;
+package org.wso2.ballerinalang.compiler.semantics.model.types;
 
 /**
  * @since 0.94
  */
-public interface FunctionNode extends InvokableNode, AnnotatableNode, TopLevelNode {
+public class Types {
 
-  VariableNode getReceiver();
+    /**
+     * @since 0.94
+     */
+    public enum RecordKind {
+        STRUCT("struct"),
+        MAP("map"),
+        JSON("json");
 
-  void setReceiver(VariableNode receiver);
+        public String value;
 
+        RecordKind(String value) {
+            this.value = value;
+        }
+    }
 }

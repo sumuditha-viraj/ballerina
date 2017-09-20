@@ -97,6 +97,7 @@ import org.wso2.ballerinalang.compiler.util.CompilerContext;
 import org.wso2.ballerinalang.compiler.util.TypeTags;
 import org.wso2.ballerinalang.programfile.CallableUnitInfo;
 import org.wso2.ballerinalang.programfile.FunctionInfo;
+import org.wso2.ballerinalang.programfile.Instruction;
 import org.wso2.ballerinalang.programfile.InstructionCodes;
 import org.wso2.ballerinalang.programfile.InstructionFactory;
 import org.wso2.ballerinalang.programfile.LocalVariableInfo;
@@ -121,6 +122,7 @@ import org.wso2.ballerinalang.programfile.cpentries.TypeRefCPEntry;
 import org.wso2.ballerinalang.programfile.cpentries.UTF8CPEntry;
 
 import java.util.ArrayList;
+import java.util.Stack;
 
 import static org.wso2.ballerinalang.programfile.ProgramFileConstants.BLOB_OFFSET;
 import static org.wso2.ballerinalang.programfile.ProgramFileConstants.BOOL_OFFSET;
@@ -178,6 +180,9 @@ public class CodeGenerator extends BLangNodeVisitor {
     // Required variables to generate code for assignment statements
     private int rhsExprRegIndex = -1;
     private boolean varAssignment = false;
+    
+    private Stack<Instruction> loopResetInstructionStack = new Stack<>();
+    private Stack<Instruction> loopExitInstructionStack = new Stack<>();
 
     public static CodeGenerator getInstance(CompilerContext context) {
         CodeGenerator codeGenerator = context.get(CODE_GENERATOR_KEY);
@@ -339,9 +344,41 @@ public class CodeGenerator extends BLangNodeVisitor {
     }
 
     public void visit(BLangReturn returnNode) {
+        BLangExpression expr;
+        int i = 0;
+        while (i < returnNode.exprs.size()) {
+            expr = returnNode.exprs.get(i);
+            this.genNode(expr, this.env);
+            if (expr.isMultiReturnExpr()) {
+                BLangInvocation invExpr = (BLangInvocation) expr;
+                for (int j = 0; j < invExpr.regIndexes.length; j++) {
+                    emit(this.typeTagToInstr(invExpr.types.get(j).tag), i, invExpr.regIndexes[j]);
+                    i++;
+                }
+            } else {
+                emit(this.typeTagToInstr(expr.type.tag), i, expr.regIndex);
+                i++;
+            }
+        }
         emit(InstructionCodes.RET);
     }
-
+    
+    private int typeTagToInstr(int typeTag) {
+        switch (typeTag) {
+        case TypeTags.INT:
+            return InstructionCodes.IRET;
+        case TypeTags.FLOAT:
+            return InstructionCodes.FRET;
+        case TypeTags.STRING:
+            return InstructionCodes.SRET;
+        case TypeTags.BOOLEAN:
+            return InstructionCodes.BRET;
+        case TypeTags.BLOB:
+            return InstructionCodes.LRET;
+        default:
+            return InstructionCodes.RRET;
+        }
+    }
 
     // Expressions
 
@@ -408,6 +445,10 @@ public class CodeGenerator extends BLangNodeVisitor {
 
         binaryExpr.regIndex = exprIndex;
         emit(opcode, binaryExpr.lhsExpr.regIndex, binaryExpr.rhsExpr.regIndex, exprIndex);
+    }
+
+    public void visit(BLangSimpleVarRef varRefExpr) {
+        // TODO 
     }
 
     public void visit(BLangFieldBasedAccess fieldAccessExpr) {
@@ -621,6 +662,12 @@ public class CodeGenerator extends BLangNodeVisitor {
 
             // Clean up the var index data structures
             endWorkerInfoUnit(defaultWorker.codeAttributeInfo);
+            
+            if (invokableNode.retParams.isEmpty()) {
+                /* for functions that has no return values, we must provide a default
+                 * return statement to stop the execution and jump to the caller */
+                this.emit(InstructionCodes.RET);
+            }
         }
     }
 
@@ -701,6 +748,11 @@ public class CodeGenerator extends BLangNodeVisitor {
 
     private int emit(int opcode, int... operands) {
         currentPkgInfo.instructionList.add(InstructionFactory.get(opcode, operands));
+        return currentPkgInfo.instructionList.size();
+    }
+    
+    private int emit(Instruction instr) {
+        currentPkgInfo.instructionList.add(instr);
         return currentPkgInfo.instructionList.size();
     }
 
@@ -935,11 +987,11 @@ public class CodeGenerator extends BLangNodeVisitor {
     }
 
     public void visit(BLangContinue continueNode) {
-        /* ignore */
+        this.emit(this.loopResetInstructionStack.peek());
     }
 
     public void visit(BLangBreak breakNode) {
-        /* ignore */
+        this.emit(this.loopExitInstructionStack.peek());
     }
 
     public void visit(BLangReply replyNode) {
@@ -959,11 +1011,35 @@ public class CodeGenerator extends BLangNodeVisitor {
     }
 
     public void visit(BLangIf ifNode) {
-        /* ignore */
+        this.genNode(ifNode.expr, this.env);
+        Instruction ifCondJumpInstr = InstructionFactory.get(InstructionCodes.BR_FALSE, ifNode.expr.regIndex, -1);
+        this.emit(ifCondJumpInstr);
+        this.genNode(ifNode.body, this.env);
+        Instruction endJumpInstr = InstructionFactory.get(InstructionCodes.GOTO, -1);
+        this.emit(endJumpInstr);
+        ifCondJumpInstr.setOperand(1, this.nextIP());
+        if (ifNode.elseStmt != null) {
+            this.genNode(ifNode.elseStmt, this.env);
+        }
+        endJumpInstr.setOperand(0, this.nextIP());
     }
 
     public void visit(BLangWhile whileNode) {
-        /* ignore */
+        Instruction gotoTopJumpInstr = InstructionFactory.get(InstructionCodes.GOTO, this.nextIP());
+        this.genNode(whileNode.expr, this.env);
+        Instruction whileCondJumpInstr = InstructionFactory.get(InstructionCodes.BR_FALSE, 
+                whileNode.expr.regIndex, -1);
+        Instruction exitLoopJumpInstr = InstructionFactory.get(InstructionCodes.GOTO, -1);
+        this.emit(whileCondJumpInstr);
+        this.loopResetInstructionStack.push(gotoTopJumpInstr);
+        this.loopExitInstructionStack.push(exitLoopJumpInstr);
+        this.genNode(whileNode.body, this.env);
+        this.loopResetInstructionStack.pop();
+        this.loopExitInstructionStack.pop();
+        this.emit(gotoTopJumpInstr);
+        int endIP = this.nextIP();
+        whileCondJumpInstr.setOperand(1, endIP);
+        exitLoopJumpInstr.setOperand(0, endIP);
     }
 
     public void visit(BLangTransaction transactionNode) {
@@ -987,10 +1063,6 @@ public class CodeGenerator extends BLangNodeVisitor {
     }
 
     public void visit(BLangRecordLiteral recordLiteral) {
-        /* ignore */
-    }
-
-    public void visit(BLangSimpleVarRef varRefExpr) {
         /* ignore */
     }
 
