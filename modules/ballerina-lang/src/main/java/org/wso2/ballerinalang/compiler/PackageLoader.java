@@ -183,11 +183,11 @@ public class PackageLoader {
     }
 
 
+    // ################### REMOVE THIS
     public BLangPackage getModel(String sourcePkg) {
         if (sourcePkg == null || sourcePkg.isEmpty()) {
             throw new IllegalArgumentException("source package/file cannot be null");
         }
-
         PackageEntity pkgEntity;
         PackageID pkgId = PackageID.EMPTY;
         if (sourcePkg.endsWith(PackageEntity.Kind.SOURCE.getExtension())) {
@@ -197,14 +197,11 @@ public class PackageLoader {
             List<Name> pkgNameComps = Arrays.stream(pkgParts)
                     .map(part -> names.fromString(part))
                     .collect(Collectors.toList());
-
             pkgId = new PackageID(pkgNameComps, Names.DEFAULT_VERSION);
             pkgEntity = this.packageRepo.loadPackage(pkgId);
         }
-
         // TODO Implement the support for loading a source package
         log("* Package Entity: " + pkgEntity);
-
         return loadPackage(pkgId, pkgEntity);
     }
 }
