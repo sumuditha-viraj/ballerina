@@ -20,6 +20,7 @@ package org.wso2.ballerinalang.compiler.parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
+import org.antlr.v4.runtime.tree.ErrorNodeImpl;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -1020,14 +1021,16 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx) {
+        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream().anyMatch(child -> child instanceof ErrorNodeImpl);
         this.pkgBuilder.addVariableDefStatement(getCurrentPos(ctx),
-                ctx.Identifier().getText(), ctx.ASSIGN() != null);
+                ctx.Identifier().getText(), isValid);
     }
 
     @Override
     public void exitConnectorVarDefStatement(BallerinaParser.ConnectorVarDefStatementContext ctx) {
+        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream().anyMatch(child -> child instanceof ErrorNodeImpl);
         this.pkgBuilder.addConnectorVarDeclaration(getCurrentPos(ctx),
-                ctx.Identifier().getText(), ctx.ASSIGN() != null);
+                ctx.Identifier().getText(), isValid);
     }
 
     @Override
