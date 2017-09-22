@@ -20,6 +20,7 @@ package org.wso2.ballerinalang.compiler.parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
+import org.antlr.v4.runtime.tree.ErrorNodeImpl;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -242,6 +243,13 @@ public class BLangParserListener extends BallerinaParserBaseListener {
             return;
         }
 
+        boolean isReceiverAttached;
+        if (ctx.parameter() != null) {
+            isReceiverAttached = true;
+        } else {
+            isReceiverAttached = false;
+        }
+
         int nativeKWTokenIndex = 0;
         boolean publicFunc = KEYWORD_PUBLIC.equals(ctx.getChild(0).getText());
         if (publicFunc) {
@@ -249,7 +257,8 @@ public class BLangParserListener extends BallerinaParserBaseListener {
         }
         boolean nativeFunc = KEYWORD_NATIVE.equals(ctx.getChild(nativeKWTokenIndex).getText());
         boolean bodyExists = ctx.callableUnitBody() != null;
-        this.pkgBuilder.endFunctionDef(getCurrentPos(ctx), getWS(ctx), publicFunc, nativeFunc, bodyExists);
+        this.pkgBuilder.endFunctionDef(getCurrentPos(ctx), getWS(ctx), publicFunc, nativeFunc,
+                bodyExists, isReceiverAttached);
     }
 
     @Override
@@ -1012,14 +1021,18 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx) {
+        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream().
+                anyMatch(child -> child instanceof ErrorNodeImpl);
         this.pkgBuilder.addVariableDefStatement(getCurrentPos(ctx),
-                ctx.Identifier().getText(), ctx.ASSIGN() != null);
+                ctx.Identifier().getText(), isValid);
     }
 
     @Override
     public void exitConnectorVarDefStatement(BallerinaParser.ConnectorVarDefStatementContext ctx) {
+        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream().
+                anyMatch(child -> child instanceof ErrorNodeImpl);
         this.pkgBuilder.addConnectorVarDeclaration(getCurrentPos(ctx),
-                ctx.Identifier().getText(), ctx.ASSIGN() != null);
+                ctx.Identifier().getText(), isValid);
     }
 
     @Override
@@ -1252,7 +1265,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitJoinClause(BallerinaParser.JoinClauseContext ctx) {
-        this.pkgBuilder.addJoinCause();
+        this.pkgBuilder.addJoinCause(ctx.Identifier().getText(), this.getWS(ctx));
     }
 
     @Override
@@ -1349,6 +1362,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitReturnStatement(BallerinaParser.ReturnStatementContext ctx) {
+        this.pkgBuilder.addReturnStatement(this.getCurrentPos(ctx), ctx.expressionList() != null);
     }
 
     /**
@@ -1894,7 +1908,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
         DiagnosticPos pos = getCurrentPos(ctx);
         if ((node = ctx.IntegerLiteral()) != null) {
-            this.pkgBuilder.addLiteralValue(pos, TypeTags.INT, Integer.parseInt(node.getText()));
+            this.pkgBuilder.addLiteralValue(pos, TypeTags.INT, Long.parseLong(node.getText()));
         } else if ((node = ctx.FloatingPointLiteral()) != null) {
             this.pkgBuilder.addLiteralValue(pos, TypeTags.FLOAT, Double.parseDouble(node.getText()));
         } else if ((node = ctx.BooleanLiteral()) != null) {

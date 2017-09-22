@@ -22,13 +22,16 @@ import org.ballerinalang.util.diagnostic.DiagnosticCode;
 import org.wso2.ballerinalang.compiler.semantics.model.SymbolEnv;
 import org.wso2.ballerinalang.compiler.semantics.model.SymbolTable;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BCastOperatorSymbol;
+import org.wso2.ballerinalang.compiler.semantics.model.symbols.BInvokableSymbol;
+import org.wso2.ballerinalang.compiler.semantics.model.symbols.BOperatorSymbol;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BSymbol;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BVarSymbol;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.SymTag;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BArrayType;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BInvokableType;
-import org.wso2.ballerinalang.compiler.semantics.model.types.BStructType;
+import org.wso2.ballerinalang.compiler.semantics.model.types.BMapType;
 import org.wso2.ballerinalang.compiler.semantics.model.types.BType;
+import org.wso2.ballerinalang.compiler.semantics.model.types.Types.RecordKind;
 import org.wso2.ballerinalang.compiler.tree.BLangNode;
 import org.wso2.ballerinalang.compiler.tree.BLangNodeVisitor;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangArrayLiteral;
@@ -39,11 +42,13 @@ import org.wso2.ballerinalang.compiler.tree.expressions.BLangIndexBasedAccess;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangInvocation;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangLiteral;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangRecordLiteral;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangRecordLiteral.BLangRecordKey;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangRecordLiteral.BLangRecordKeyValue;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangSimpleVarRef;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangTypeCastExpr;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangTypeConversionExpr;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangUnaryExpr;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangVariableReference;
 import org.wso2.ballerinalang.compiler.tree.expressions.MultiReturnExpr;
 import org.wso2.ballerinalang.compiler.util.CompilerContext;
 import org.wso2.ballerinalang.compiler.util.Name;
@@ -144,6 +149,7 @@ public class TypeChecker extends BLangNodeVisitor {
         checkType(node.pos, node.type, expType, diagCode);
     }
 
+
     // Expressions
 
     public void visit(BLangLiteral literalExpr) {
@@ -181,16 +187,11 @@ public class TypeChecker extends BLangNodeVisitor {
             expTypes = Lists.of(symTable.mapType);
         }
 
-//        if (expTypeTag == TypeTags.MAP ||
-//                expTypeTag == TypeTags.JSON) {
-//            recordLiteral.keyValuePairs.forEach(keyValuePair ->
-//                    checkStructLiteralKeyValuePair(keyValuePair, expTypes.get(0)));
-//            actualType = expTypes.get(0);
-//        }
-
-        if (expTypeTag == TypeTags.STRUCT) {
+        if (expTypeTag == TypeTags.JSON ||
+                expTypeTag == TypeTags.MAP ||
+                expTypeTag == TypeTags.STRUCT) {
             recordLiteral.keyValuePairs.forEach(keyValuePair ->
-                    checkStructLiteralKeyValuePair(keyValuePair, (BStructType) expTypes.get(0)));
+                    checkRecLiteralKeyValue(keyValuePair, expTypes.get(0)));
             actualType = expTypes.get(0);
         }
 
@@ -202,12 +203,23 @@ public class TypeChecker extends BLangNodeVisitor {
         BType actualType = symTable.errType;
 
         Name varName = names.fromIdNode(varRefExpr.variableName);
+        if (varName == Names.IGNORE) {
+            if (varRefExpr.lhsVar) {
+                varRefExpr.type = this.symTable.noType;
+            } else {
+                varRefExpr.type = this.symTable.errType;
+                dlog.error(varRefExpr.pos, DiagnosticCode.UNDERSCORE_NOT_ALLOWED);
+            }
+            resultTypes = Lists.of(varRefExpr.type);
+            return;
+        }
         BSymbol symbol = symResolver.lookupSymbol(env, varName, SymTag.VARIABLE);
         if (symbol == symTable.notFoundSymbol) {
             dlog.error(varRefExpr.pos, DiagnosticCode.UNDEFINED_SYMBOL, varName.toString());
         } else {
             BVarSymbol varSym = (BVarSymbol) symbol;
             checkSefReferences(varRefExpr.pos, env, varSym);
+            varRefExpr.symbol = varSym;
             actualType = varSym.type;
         }
 
@@ -216,18 +228,75 @@ public class TypeChecker extends BLangNodeVisitor {
     }
 
     public void visit(BLangFieldBasedAccess fieldAccessExpr) {
-        // TODO
+        BType actualType = symTable.errType;
+        // First analyze the variable reference expression.
         checkExpr(fieldAccessExpr.expr, this.env, Lists.of(symTable.noType));
+
+        BType varRefType = fieldAccessExpr.expr.type;
+        switch (varRefType.tag) {
+            case TypeTags.STRUCT:
+                Name fieldName = names.fromIdNode(fieldAccessExpr.field);
+                actualType = checkStructFieldAccess(fieldAccessExpr, fieldName, varRefType);
+                break;
+            case TypeTags.MAP:
+                actualType = ((BMapType) varRefType).getConstraint();
+                break;
+            case TypeTags.JSON:
+                // TODO with constrained json
+                break;
+            case TypeTags.ERROR:
+                // Do nothing
+                break;
+            default:
+                dlog.error(fieldAccessExpr.pos, DiagnosticCode.OPERATION_DOES_NOT_SUPPORT_FIELD_ACCESS,
+                        varRefType);
+        }
+
+        resultTypes = checkTypes(fieldAccessExpr, Lists.of(actualType), this.expTypes);
     }
 
-    public void visit(BLangIndexBasedAccess indexAccessExpr) {
-        // TODO
+    public void visit(BLangIndexBasedAccess indexBasedAccessExpr) {
+        BType actualType = symTable.errType;
         // First analyze the variable reference expression.
-        checkExpr(indexAccessExpr.expr, this.env, Lists.of(symTable.noType));
+        checkExpr(indexBasedAccessExpr.expr, this.env, Lists.of(symTable.noType));
 
-        // Validate the index expression
-        // Expected type == int, if the variable is an array.
-        checkExpr(indexAccessExpr.indexExpr, this.env, Lists.of(symTable.intType));
+        BType indexExprType;
+        BType varRefType = indexBasedAccessExpr.expr.type;
+        BLangExpression indexExpr = indexBasedAccessExpr.indexExpr;
+        switch (varRefType.tag) {
+            case TypeTags.STRUCT:
+                indexExprType = checkIndexExprForStructFieldAccess(indexExpr);
+                if (indexExprType.tag == TypeTags.STRING) {
+                    String fieldName = (String) ((BLangLiteral) indexExpr).value;
+                    actualType = checkStructFieldAccess(indexBasedAccessExpr, names.fromString(fieldName), varRefType);
+                }
+                break;
+            case TypeTags.MAP:
+                indexExprType = checkExpr(indexExpr, this.env,
+                        Lists.of(symTable.stringType)).get(0);
+                if (indexExprType.tag == TypeTags.STRING) {
+                    actualType = ((BMapType) varRefType).getConstraint();
+                }
+                break;
+            case TypeTags.JSON:
+                // TODO with constrained json
+                break;
+            case TypeTags.ARRAY:
+                indexExprType = checkExpr(indexExpr, this.env,
+                        Lists.of(symTable.intType)).get(0);
+                if (indexExprType.tag == TypeTags.INT) {
+                    actualType = ((BArrayType) varRefType).getElementType();
+                }
+                break;
+            case TypeTags.ERROR:
+                // Do nothing
+                break;
+            default:
+                dlog.error(indexBasedAccessExpr.pos, DiagnosticCode.OPERATION_DOES_NOT_SUPPORT_INDEXING,
+                        indexBasedAccessExpr.expr.type);
+        }
+
+        resultTypes = checkTypes(indexBasedAccessExpr, Lists.of(actualType), this.expTypes);
     }
 
     public void visit(BLangInvocation iExpr) {
@@ -259,6 +328,7 @@ public class TypeChecker extends BLangNodeVisitor {
                 dlog.error(binaryExpr.pos, DiagnosticCode.BINARY_OP_INCOMPATIBLE_TYPES,
                         binaryExpr.opKind, lhsType, rhsType);
             } else {
+                binaryExpr.opSymbol = (BOperatorSymbol) opSymbol;
                 actualType = opSymbol.type.getReturnTypes().get(0);
             }
         }
@@ -283,6 +353,7 @@ public class TypeChecker extends BLangNodeVisitor {
             dlog.error(castExpr.pos, DiagnosticCode.INCOMPATIBLE_TYPES_CAST, sourceType, targetType);
         } else {
             BCastOperatorSymbol castSym = (BCastOperatorSymbol) symbol;
+            castExpr.castSymbol = castSym;
             actualTypes = getActualTypesOfCastExpr(castExpr, targetType, sourceType, castSym);
         }
 
@@ -321,6 +392,9 @@ public class TypeChecker extends BLangNodeVisitor {
             return type;
         } else if (type.tag == expType.tag) {
             return type;
+        } else if (expType.tag == TypeTags.ANY) {
+            // TODO Implicit cast possible
+            return expType;
         }
 
         // TODO Add more logic to check type compatibility assignability etc.
@@ -356,6 +430,9 @@ public class TypeChecker extends BLangNodeVisitor {
                 dlog.error(expr.pos, DiagnosticCode.ASSIGNMENT_COUNT_MISMATCH, expected, actual);
                 resultTypes = getListWithErrorTypes(expected);
             }
+        }
+
+        if (resultTypes.size() > 0) {
             expr.type = resultTypes.get(0);
         }
     }
@@ -398,10 +475,14 @@ public class TypeChecker extends BLangNodeVisitor {
         Name funcName = names.fromIdNode(iExpr.name);
         BSymbol funcSymbol = symResolver.resolveInvokable(iExpr.pos, DiagnosticCode.UNDEFINED_FUNCTION,
                 this.env, names.fromIdNode(iExpr.pkgAlias), funcName);
-        if (funcSymbol == symTable.errSymbol) {
+        if (funcSymbol == symTable.errSymbol || funcSymbol == symTable.notFoundSymbol) {
             resultTypes = actualTypes;
             return;
         }
+
+        // Set the resolved function symbol in the invocation expression.
+        // This is used in the code generation phase.
+        iExpr.symbol = (BInvokableSymbol) funcSymbol;
 
         List<BType> paramTypes = ((BInvokableType) funcSymbol.type).getParameterTypes();
         if (iExpr.argExprs.size() == 1 && iExpr.argExprs.get(0).getKind() == NodeKind.INVOCATION) {
@@ -444,20 +525,36 @@ public class TypeChecker extends BLangNodeVisitor {
         resultTypes = checkTypes(iExpr, actualTypes, expTypes);
     }
 
-    private void checkStructLiteralKeyValuePair(BLangRecordKeyValue keyValuePair, BStructType structType) {
-        BLangExpression keyExpr = keyValuePair.keyExpr;
+    private void checkRecLiteralKeyValue(BLangRecordKeyValue keyValuePair, BType recType) {
+        BType fieldType = symTable.errType;
+        switch (recType.tag) {
+            case TypeTags.STRUCT:
+                fieldType = checkStructLiteralKeyExpr(keyValuePair.key, recType, RecordKind.STRUCT);
+                break;
+            case TypeTags.MAP:
+                fieldType = checkMapLiteralKeyExpr(keyValuePair.key.expr, recType, RecordKind.STRUCT);
+                break;
+            case TypeTags.JSON:
+                fieldType = checkJSONLiteralKeyExpr(keyValuePair.key.expr, recType, RecordKind.STRUCT);
+        }
+
+        BLangExpression valueExpr = keyValuePair.valueExpr;
+        checkExpr(valueExpr, this.env, Lists.of(fieldType));
+    }
+
+    private BType checkStructLiteralKeyExpr(BLangRecordKey key, BType recordType, RecordKind recKind) {
         Name fieldName;
-        if (keyExpr.getKind() != NodeKind.LITERAL &&
-                keyExpr.getKind() != NodeKind.SIMPLE_VARIABLE_REF) {
-            dlog.error(keyExpr.pos, DiagnosticCode.INVALID_FIELD_NAME_STRUCT_LITERAL);
-            return;
+        BLangExpression keyExpr = key.expr;
+
+        if (checkRecLiteralKeyExpr(keyExpr, recKind).tag != TypeTags.STRING) {
+            return symTable.errType;
+
+        } else if (keyExpr.getKind() == NodeKind.STRING_TEMPLATE_LITERAL) {
+            // keys of the struct literal can only be string literals and identifiers
+            dlog.error(keyExpr.pos, DiagnosticCode.STRING_TEMPLATE_LIT_NOT_ALLOWED);
+            return symTable.errType;
 
         } else if (keyExpr.getKind() == NodeKind.LITERAL) {
-            BType keyExprType = checkExpr(keyExpr, this.env, Lists.of(symTable.stringType)).get(0);
-            if (keyExprType == symTable.errType) {
-                return;
-            }
-
             Object literalValue = ((BLangLiteral) keyExpr).value;
             fieldName = names.fromString((String) literalValue);
 
@@ -467,13 +564,69 @@ public class TypeChecker extends BLangNodeVisitor {
         }
 
         // Check weather the struct field exists
-        BSymbol symbol = symResolver.resolveStructField(keyExpr.pos, fieldName, structType.tsymbol);
-        if (symbol == symTable.notFoundSymbol) {
-            return;
+        BSymbol fieldSymbol = symResolver.resolveStructField(keyExpr.pos, fieldName, recordType.tsymbol);
+        if (fieldSymbol == symTable.notFoundSymbol) {
+            return symTable.errType;
         }
 
-        BVarSymbol fieldSymbol = (BVarSymbol) symbol;
-        BLangExpression valueExpr = keyValuePair.valueExpr;
-        checkExpr(valueExpr, this.env, Lists.of(fieldSymbol.type));
+        // Setting the struct field symbol for future use in Desugar and code generator.
+        key.fieldSymbol = (BVarSymbol) fieldSymbol;
+        return fieldSymbol.type;
+    }
+
+    private BType checkJSONLiteralKeyExpr(BLangExpression keyExpr, BType recordType, RecordKind recKind) {
+        if (checkRecLiteralKeyExpr(keyExpr, recKind).tag != TypeTags.STRING) {
+            return symTable.errType;
+        }
+
+        // TODO constrained json
+        return symTable.jsonType;
+    }
+
+    private BType checkMapLiteralKeyExpr(BLangExpression keyExpr, BType recordType, RecordKind recKind) {
+        if (checkRecLiteralKeyExpr(keyExpr, recKind).tag != TypeTags.STRING) {
+            return symTable.errType;
+        }
+
+        // TODO constrained map
+        return symTable.anyType;
+    }
+
+    private BType checkRecLiteralKeyExpr(BLangExpression keyExpr, RecordKind recKind) {
+        // keys of the record literal can only be string literals, identifiers or string template literals
+        if (keyExpr.getKind() != NodeKind.LITERAL &&
+                keyExpr.getKind() != NodeKind.SIMPLE_VARIABLE_REF &&
+                keyExpr.getKind() != NodeKind.STRING_TEMPLATE_LITERAL) {
+            dlog.error(keyExpr.pos, DiagnosticCode.INVALID_FIELD_NAME_RECORD_LITERAL, recKind.value);
+            return symTable.errType;
+
+        } else if (keyExpr.getKind() == NodeKind.LITERAL ||
+                keyExpr.getKind() == NodeKind.STRING_TEMPLATE_LITERAL) {
+            return checkExpr(keyExpr, this.env, Lists.of(symTable.stringType)).get(0);
+        }
+
+        // If the key expression is an identifier then we simply set the type as string.
+        keyExpr.type = symTable.stringType;
+        return keyExpr.type;
+    }
+
+    private BType checkIndexExprForStructFieldAccess(BLangExpression indexExpr) {
+        if (indexExpr.getKind() != NodeKind.LITERAL) {
+            dlog.error(indexExpr.pos, DiagnosticCode.INVALID_INDEX_EXPR_STRUCT_FIELD_ACCESS);
+            return symTable.errType;
+        }
+
+        return checkExpr(indexExpr, this.env, Lists.of(symTable.stringType)).get(0);
+    }
+
+    private BType checkStructFieldAccess(BLangVariableReference varReferExpr, Name fieldName, BType structType) {
+        BSymbol fieldSymbol = symResolver.resolveStructField(varReferExpr.pos, fieldName, structType.tsymbol);
+        if (fieldSymbol == symTable.notFoundSymbol) {
+            return symTable.errType;
+        }
+
+        // Setting the field symbol. This is used during the code generation phase
+        varReferExpr.symbol = (BVarSymbol) fieldSymbol;
+        return fieldSymbol.type;
     }
 }

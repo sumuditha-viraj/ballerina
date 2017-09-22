@@ -19,6 +19,7 @@ package org.ballerinalang.model;
 
 import org.ballerinalang.util.diagnostic.DiagnosticListener;
 import org.wso2.ballerinalang.compiler.Compiler;
+import org.wso2.ballerinalang.compiler.tree.BLangPackage;
 import org.wso2.ballerinalang.compiler.util.CompilerContext;
 import org.wso2.ballerinalang.compiler.util.CompilerOptions;
 
@@ -41,10 +42,9 @@ public class BTester {
 
         CompilerContext context = new CompilerContext();
         options = CompilerOptions.getInstance(context);
-//        options.put(SOURCE_ROOT, System.getProperty("user.dir"));
-        options.put(SOURCE_ROOT, System.getProperty("user.dir") + "/bal-src");
+        options.put(SOURCE_ROOT, "/home/nadeeshaan/Desktop");
         options.put(COMPILER_PHASE, "typeCheck");
-        options.put(PRESERVE_WHITESPACE, "false");
+        options.put(PRESERVE_WHITESPACE, "true");
 
         // How to set a custom diagnostic listener
         DiagnosticListener listener = diagnostic -> out.println(diagnostic.getMessage());
@@ -55,9 +55,7 @@ public class BTester {
         //context.put(PackageRepository.class, repo);
 
         Compiler compiler = Compiler.getInstance(context);
-//        compiler.compile("bar.bal");
-        compiler.compile("bazz.bal");
-//        compiler.compile("a.b.c");
+        BLangPackage bLangPackage = compiler.compile("test.bal");
     }
 
 }

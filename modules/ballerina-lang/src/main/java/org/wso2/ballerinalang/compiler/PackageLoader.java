@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.ballerinalang.compiler.CompilerOptionName.SOURCE_ROOT;
@@ -121,6 +122,9 @@ public class PackageLoader {
     private BLangPackage loadPackage(PackageID pkgId, PackageEntity pkgEntity) {
         BLangPackage pkgNode;
         BPackageSymbol pSymbol;
+
+        // TODO Handle pkgEntity 
+
         if (pkgEntity.getKind() == PackageEntity.Kind.SOURCE) {
             pkgNode = this.sourceCompile((PackageSource) pkgEntity);
             pSymbol = symbolEnter.definePackage(pkgNode);
@@ -180,5 +184,32 @@ public class PackageLoader {
     private PackageRepository loadUserRepository() {
         this.loadExtensionRepository();
         return null;
+    }
+
+
+    // ################### REMOVE THIS
+    public BLangPackage getModel(String sourcePkg) {
+        if (sourcePkg == null || sourcePkg.isEmpty()) {
+            throw new IllegalArgumentException("source package/file cannot be null");
+        }
+        PackageEntity pkgEntity;
+        PackageID pkgId = PackageID.EMPTY;
+        if (sourcePkg.endsWith(PackageEntity.Kind.SOURCE.getExtension())) {
+            pkgEntity = this.packageRepo.loadPackage(pkgId, sourcePkg);
+        } else {
+            String[] pkgParts = sourcePkg.split("\\.");
+            List<Name> pkgNameComps = Arrays.stream(pkgParts)
+                    .map(part -> names.fromString(part))
+                    .collect(Collectors.toList());
+            pkgId = new PackageID(pkgNameComps, Names.DEFAULT_VERSION);
+            pkgEntity = this.packageRepo.loadPackage(pkgId);
+        }
+        // TODO Implement the support for loading a source package
+        log("* Package Entity: " + pkgEntity);
+        return loadPackage(pkgId, pkgEntity);
+    }
+
+    public Set<PackageID> listPackages() {
+        return this.packageRepo.listPackages();
     }
 }

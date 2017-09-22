@@ -20,10 +20,18 @@ package org.wso2.ballerinalang.compiler;
 import org.ballerinalang.compiler.CompilerOptionName;
 import org.ballerinalang.compiler.CompilerPhase;
 import org.wso2.ballerinalang.compiler.codegen.CodeGenerator;
+import org.wso2.ballerinalang.compiler.desugar.Desugar;
+import org.wso2.ballerinalang.compiler.semantics.analyzer.CodeAnalyzer;
 import org.wso2.ballerinalang.compiler.semantics.analyzer.SemanticAnalyzer;
 import org.wso2.ballerinalang.compiler.tree.BLangPackage;
 import org.wso2.ballerinalang.compiler.util.CompilerContext;
 import org.wso2.ballerinalang.compiler.util.CompilerOptions;
+import org.wso2.ballerinalang.programfile.ProgramFile;
+import org.wso2.ballerinalang.programfile.ProgramFileWriter;
+
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Paths;
 
 /**
  * @since 0.94
@@ -36,6 +44,8 @@ public class Compiler {
     private CompilerOptions options;
     private PackageLoader pkgLoader;
     private SemanticAnalyzer semAnalyzer;
+    private CodeAnalyzer codeAnalyzer;
+    private Desugar desugar;
     private CodeGenerator codeGenerator;
 
     private CompilerPhase compilerPhase;
@@ -54,26 +64,34 @@ public class Compiler {
         this.options = CompilerOptions.getInstance(context);
         this.pkgLoader = PackageLoader.getInstance(context);
         this.semAnalyzer = SemanticAnalyzer.getInstance(context);
+        this.codeAnalyzer = CodeAnalyzer.getInstance(context);
+        this.desugar = Desugar.getInstance(context);
         this.codeGenerator = CodeGenerator.getInstance(context);
 
         this.compilerPhase = getCompilerPhase();
     }
 
-    public void compile(String sourcePkg) {
+    public BLangPackage compile(String sourcePkg) {
+        BLangPackage bLangPackage = null;
         switch (compilerPhase) {
             case DEFINE:
-                define(sourcePkg);
+                bLangPackage = define(sourcePkg);
                 break;
             case TYPE_CHECK:
-                typeCheck(define(sourcePkg));
+                bLangPackage = typeCheck(define(sourcePkg));
                 break;
             case CODE_ANALYZE:
-                typeCheck(define(sourcePkg));
+                bLangPackage = typeCheck(define(sourcePkg));
+                break;
+            case DESUGAR:
+                desugar(codeAnalyze(typeCheck(define(sourcePkg))));
                 break;
             case CODE_GEN:
-                gen(typeCheck(define(sourcePkg)));
+                gen(desugar(codeAnalyze(typeCheck(define(sourcePkg)))));
                 break;
         }
+
+        return bLangPackage;
     }
 
     private BLangPackage define(String sourcePkg) {
@@ -84,8 +102,24 @@ public class Compiler {
         return semAnalyzer.analyze(pkgNode);
     }
 
+    private BLangPackage codeAnalyze(BLangPackage pkgNode) {
+        return codeAnalyzer.analyze(pkgNode);
+    }
+
+    private BLangPackage desugar(BLangPackage pkgNode) {
+        return desugar.perform(pkgNode);
+    }
+
     private void gen(BLangPackage pkgNode) {
-        this.codeGenerator.generate(pkgNode);
+        ProgramFile programFile = this.codeGenerator.generate(pkgNode);
+
+        try {
+            ProgramFileWriter.writeProgram(programFile, Paths.get("temp.balx"));
+        } catch (IOException e) {
+            // TODO FIX This ASAP
+            PrintStream err = System.err;
+            err.println(e.getMessage());
+        }
     }
 
     private CompilerPhase getCompilerPhase() {
@@ -95,5 +129,11 @@ public class Compiler {
         }
 
         return CompilerPhase.fromValue(phaseName);
+    }
+
+    // ################## REMOVE THIS #############
+    public BLangPackage getModel(String fileName) {
+        return pkgLoader.getModel(fileName);
+        // TODO Impliment CompilerPolicy.. Phases, PARSE, SEMANTIC_ANALYSIS, CODE_ANALYSIS, CODEGEN etc.
     }
 }
