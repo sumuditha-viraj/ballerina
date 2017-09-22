@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.ballerinalang.compiler.CompilerOptionName.SOURCE_ROOT;
@@ -206,5 +207,9 @@ public class PackageLoader {
         // TODO Implement the support for loading a source package
         log("* Package Entity: " + pkgEntity);
         return loadPackage(pkgId, pkgEntity);
+    }
+
+    public Set<PackageID> listPackages() {
+        return this.packageRepo.listPackages();
     }
 }

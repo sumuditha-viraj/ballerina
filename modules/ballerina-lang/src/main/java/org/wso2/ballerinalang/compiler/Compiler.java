@@ -32,7 +32,6 @@ import org.wso2.ballerinalang.programfile.ProgramFileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Paths;
-import java.util.stream.Collectors;
 
 /**
  * @since 0.94

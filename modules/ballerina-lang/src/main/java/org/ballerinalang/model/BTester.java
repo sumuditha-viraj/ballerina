@@ -56,7 +56,6 @@ public class BTester {
 
         Compiler compiler = Compiler.getInstance(context);
         BLangPackage bLangPackage = compiler.compile("test.bal");
-        System.out.println(bLangPackage);
     }
 
 }

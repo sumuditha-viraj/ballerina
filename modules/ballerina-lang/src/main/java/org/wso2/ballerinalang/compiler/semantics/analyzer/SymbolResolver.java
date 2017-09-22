@@ -219,7 +219,8 @@ public class SymbolResolver extends BLangNodeVisitor {
         if (env.enclEnv == null) {
             visibleEntries = new HashMap<>();
         } else {
-            visibleEntries = Stream.concat(env.scope.entries.entrySet().stream(), lookupAllVisibleSymbols(env.enclEnv).entrySet().stream())
+            visibleEntries = Stream.concat(env.scope.entries.entrySet().stream(), lookupAllVisibleSymbols(env.enclEnv)
+                    .entrySet().stream())
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
 
