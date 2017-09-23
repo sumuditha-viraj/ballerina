@@ -64,6 +64,9 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitParameter(BallerinaParser.ParameterContext ctx) {
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addVar(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
                 false, ctx.annotationAttachment().size());
     }
@@ -1072,18 +1075,20 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx) {
-        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream().
-                anyMatch(child -> child instanceof ErrorNodeImpl);
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addVariableDefStatement(getCurrentPos(ctx),
-                ctx.Identifier().getText(), isValid);
+                ctx.Identifier().getText(), ctx.ASSIGN() != null);
     }
 
     @Override
     public void exitConnectorVarDefStatement(BallerinaParser.ConnectorVarDefStatementContext ctx) {
-        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream().
-                anyMatch(child -> child instanceof ErrorNodeImpl);
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addConnectorVarDeclaration(getCurrentPos(ctx),
-                ctx.Identifier().getText(), isValid);
+                ctx.Identifier().getText(), ctx.ASSIGN() != null);
     }
 
     @Override
