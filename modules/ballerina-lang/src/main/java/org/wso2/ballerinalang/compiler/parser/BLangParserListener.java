@@ -20,6 +20,7 @@ package org.wso2.ballerinalang.compiler.parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
+import org.antlr.v4.runtime.tree.ErrorNodeImpl;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -63,6 +64,9 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitParameter(BallerinaParser.ParameterContext ctx) {
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addVar(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
                 false, ctx.annotationAttachment().size());
     }
@@ -1071,12 +1075,18 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx) {
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addVariableDefStatement(getCurrentPos(ctx),
                 ctx.Identifier().getText(), ctx.ASSIGN() != null);
     }
 
     @Override
     public void exitConnectorVarDefStatement(BallerinaParser.ConnectorVarDefStatementContext ctx) {
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addConnectorVarDeclaration(getCurrentPos(ctx),
                 ctx.Identifier().getText(), ctx.ASSIGN() != null);
     }
