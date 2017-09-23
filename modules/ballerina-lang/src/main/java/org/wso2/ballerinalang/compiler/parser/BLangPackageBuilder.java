@@ -603,7 +603,7 @@ public class BLangPackageBuilder {
         BLangTypeConversionExpr typeConversionNode = (BLangTypeConversionExpr) TreeBuilder.createTypeConversionNode();
         typeConversionNode.pos = pos;
         typeConversionNode.expr = (BLangExpression) exprNodeStack.pop();
-        typeConversionNode.typeName = (BLangType) typeNodeStack.pop();
+        typeConversionNode.typeNode = (BLangType) typeNodeStack.pop();
         addExpressionNode(typeConversionNode);
     }
 
@@ -621,6 +621,7 @@ public class BLangPackageBuilder {
         ternaryExpr.elseExpr = (BLangExpression) exprNodeStack.pop();
         ternaryExpr.thenExpr = (BLangExpression) exprNodeStack.pop();
         ternaryExpr.expr = (BLangExpression) exprNodeStack.pop();
+        addExpressionNode(ternaryExpr);
     }
 
 
