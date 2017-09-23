@@ -232,17 +232,17 @@ public class SymbolResolver extends BLangNodeVisitor {
         return symTable.notFoundSymbol;
     }
 
+    /**
+     * Lookup all the visible symbols for a given environment scope
+     * @param env Symbol environment
+     * @return all the visible symbols
+     */
     public Map<Name, ScopeEntry> lookupAllVisibleSymbols(SymbolEnv env) {
-        Map<Name, ScopeEntry> visibleEntries;
-
-        if (env.enclEnv == null) {
-            visibleEntries = new HashMap<>();
-        } else {
-            visibleEntries = Stream.concat(env.scope.entries.entrySet().stream(), lookupAllVisibleSymbols(env.enclEnv)
-                    .entrySet().stream())
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<Name, ScopeEntry> visibleEntries = new HashMap<>();
+        visibleEntries.putAll(env.scope.entries);
+        if (env.enclEnv != null) {
+            visibleEntries.putAll(lookupAllVisibleSymbols(env.enclEnv));
         }
-
         return visibleEntries;
     }
 
