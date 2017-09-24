@@ -17,6 +17,7 @@
 */
 package org.wso2.ballerinalang.compiler.desugar;
 
+import org.ballerinalang.model.TreeBuilder;
 import org.ballerinalang.model.tree.NodeKind;
 import org.wso2.ballerinalang.compiler.semantics.model.SymbolTable;
 import org.wso2.ballerinalang.compiler.semantics.model.symbols.BSymbol;
@@ -54,6 +55,7 @@ import org.wso2.ballerinalang.compiler.tree.expressions.BLangSimpleVarRef;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangSimpleVarRef.BLangFieldVarRef;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangSimpleVarRef.BLangFunctionVarRef;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangSimpleVarRef.BLangLocalVarRef;
+import org.wso2.ballerinalang.compiler.tree.expressions.BLangSimpleVarRef.BLangPackageVarRef;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangStringTemplateLiteral;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangTernaryExpr;
 import org.wso2.ballerinalang.compiler.tree.expressions.BLangTypeCastExpr;
@@ -226,6 +228,17 @@ public class Desugar extends BLangNodeVisitor {
 
     @Override
     public void visit(BLangReturn returnNode) {
+        if (returnNode.namedReturnVariables != null) {
+            // Handled named returns.
+            for (BLangVariable variable : returnNode.namedReturnVariables) {
+                BLangSimpleVarRef varRef = (BLangSimpleVarRef) TreeBuilder.createSimpleVariableReferenceNode();
+                varRef.variableName = variable.name;
+                varRef.symbol = variable.symbol;
+                varRef.type = variable.type;
+                varRef.pos = returnNode.pos;
+                returnNode.exprs.add(varRef);
+            }
+        }
         returnNode.exprs = rewrite(returnNode.exprs);
         result = returnNode;
     }
@@ -347,7 +360,7 @@ public class Desugar extends BLangNodeVisitor {
     public void visit(BLangSimpleVarRef varRefExpr) {
         BSymbol ownerSymbol = varRefExpr.symbol.owner;
         if ((varRefExpr.symbol.tag & SymTag.FUNCTION) == SymTag.FUNCTION &&
-                varRefExpr.type.tag == TypeTags.INVOKABLE) {
+                varRefExpr.symbol.type.tag == TypeTags.INVOKABLE) {
             result = new BLangFunctionVarRef(varRefExpr.symbol);
         } else if ((ownerSymbol.tag & SymTag.INVOKABLE) == SymTag.INVOKABLE) {
             // Local variable in a function/resource/action/worker
@@ -360,7 +373,7 @@ public class Desugar extends BLangNodeVisitor {
                 (ownerSymbol.tag & SymTag.SERVICE) == SymTag.SERVICE) {
             // Package variable | service variable
             // We consider both of them as package level variables
-            result = new BLangFieldVarRef(varRefExpr.symbol);
+            result = new BLangPackageVarRef(varRefExpr.symbol);
         }
 
         result.type = varRefExpr.type;
