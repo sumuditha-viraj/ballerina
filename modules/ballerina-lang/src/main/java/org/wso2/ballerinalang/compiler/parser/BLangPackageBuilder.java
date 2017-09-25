@@ -62,6 +62,7 @@ import org.wso2.ballerinalang.compiler.tree.BLangFunction;
 import org.wso2.ballerinalang.compiler.tree.BLangIdentifier;
 import org.wso2.ballerinalang.compiler.tree.BLangImportPackage;
 import org.wso2.ballerinalang.compiler.tree.BLangNameReference;
+import org.wso2.ballerinalang.compiler.tree.BLangNode;
 import org.wso2.ballerinalang.compiler.tree.BLangPackageDeclaration;
 import org.wso2.ballerinalang.compiler.tree.BLangService;
 import org.wso2.ballerinalang.compiler.tree.BLangStruct;
@@ -1130,14 +1131,16 @@ public class BLangPackageBuilder {
         transactionNode.setRetryCount(exprNodeStack.pop());
     }
 
-    public void addIfBlock() {
+    public void addIfBlock(DiagnosticPos pos) {
         IfNode ifNode = ifElseStatementStack.peek();
+        ((BLangIf)ifNode).pos = pos;
         ifNode.setCondition(exprNodeStack.pop());
         ifNode.setBody(blockNodeStack.pop());
     }
 
-    public void addElseIfBlock() {
+    public void addElseIfBlock(DiagnosticPos pos) {
         IfNode elseIfNode = ifElseStatementStack.pop();
+        ((BLangIf) elseIfNode).pos = pos;
         elseIfNode.setCondition(exprNodeStack.pop());
         elseIfNode.setBody(blockNodeStack.pop());
 
@@ -1148,12 +1151,14 @@ public class BLangPackageBuilder {
         parentIfNode.setElseStatement(elseIfNode);
     }
 
-    public void addElseBlock() {
+    public void addElseBlock(DiagnosticPos pos) {
         IfNode ifNode = ifElseStatementStack.peek();
         while (ifNode.getElseStatement() != null) {
             ifNode = (IfNode) ifNode.getElseStatement();
         }
-        ifNode.setElseStatement(blockNodeStack.pop());
+        BlockNode blockNode = blockNodeStack.pop();
+        ((BLangNode)blockNode).pos = pos;
+        ifNode.setElseStatement(blockNode);
     }
 
     public void endIfElseNode() {

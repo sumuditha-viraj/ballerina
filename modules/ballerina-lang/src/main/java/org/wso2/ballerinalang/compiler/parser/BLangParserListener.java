@@ -20,6 +20,7 @@ package org.wso2.ballerinalang.compiler.parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
+import org.antlr.v4.runtime.tree.ErrorNodeImpl;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -1074,11 +1075,13 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx) {
-        if (ctx.exception != null) {
+        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream()
+                .anyMatch(child -> child instanceof ErrorNodeImpl);
+        if (!isValid) {
             return;
         }
         this.pkgBuilder.addVariableDefStatement(getCurrentPos(ctx),
-                ctx.Identifier().getText(), ctx.ASSIGN() != null);
+                ctx.Identifier().getText(), isValid);
     }
 
     @Override
@@ -1183,7 +1186,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitIfClause(BallerinaParser.IfClauseContext ctx) {
-        this.pkgBuilder.addIfBlock();
+        this.pkgBuilder.addIfBlock(getCurrentPos(ctx));
     }
 
     /**
@@ -1204,7 +1207,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitElseIfClause(BallerinaParser.ElseIfClauseContext ctx) {
-        this.pkgBuilder.addElseIfBlock();
+        this.pkgBuilder.addElseIfBlock(getCurrentPos(ctx));
     }
 
     /**
@@ -1224,7 +1227,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitElseClause(BallerinaParser.ElseClauseContext ctx) {
-        this.pkgBuilder.addElseBlock();
+        this.pkgBuilder.addElseBlock(getCurrentPos(ctx));
     }
 
     /**
@@ -1939,6 +1942,9 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitFieldDefinition(BallerinaParser.FieldDefinitionContext ctx) {
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addVar(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
                 ctx.simpleLiteral() != null, 0);
     }
