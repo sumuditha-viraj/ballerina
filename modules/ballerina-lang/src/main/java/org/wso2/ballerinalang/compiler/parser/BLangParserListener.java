@@ -1942,6 +1942,9 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitFieldDefinition(BallerinaParser.FieldDefinitionContext ctx) {
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addVar(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
                 ctx.simpleLiteral() != null, 0);
     }
