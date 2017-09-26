@@ -138,7 +138,7 @@ public class Compiler {
 
     // ################## REMOVE THIS #############
     public BLangPackage getModel(String fileName) {
-        return pkgLoader.getModel(fileName);
+        return pkgLoader.loadEntryPackage(fileName);
         // TODO Impliment CompilerPolicy.. Phases, PARSE, SEMANTIC_ANALYSIS, CODE_ANALYSIS, CODEGEN etc.
     }
 }
