@@ -87,7 +87,7 @@ public class Compiler {
                 bLangPackage = typeCheck(define(sourcePkg));
                 break;
             case CODE_ANALYZE:
-                bLangPackage = typeCheck(define(sourcePkg));
+                bLangPackage = codeAnalyze(typeCheck(define(sourcePkg)));
                 break;
             case DESUGAR:
                 desugar(codeAnalyze(typeCheck(define(sourcePkg))));
