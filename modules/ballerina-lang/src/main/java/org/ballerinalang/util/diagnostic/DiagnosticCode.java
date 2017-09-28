@@ -45,6 +45,7 @@ public enum DiagnosticCode {
     INVALID_WORKER_RECEIVE_POSITION("invalid.worker.receive.position"),
     UNDEFINED_WORKER("undefined.worker"),
     INVALID_WORKER_JOIN_RESULT_TYPE("invalid.worker.join.result.type"),
+    INVALID_WORKER_TIMEOUT_RESULT_TYPE("invalid.worker.timeout.result.type"),
 
     FUNCTION_MUST_RETURN("function.must.return"),
     ATLEAST_ONE_WORKER_MUST_RETURN("atleast.one.worker.must.return"),
@@ -53,6 +54,7 @@ public enum DiagnosticCode {
     ABORT_CANNOT_BE_OUTSIDE_TRANSACTION_BLOCK("abort.cannot.be.outside.transaction.block"),
     RETRY_CANNOT_BE_OUTSIDE_TRANSACTION_FAILED_BLOCK("retry.cannot.be.outside.transaction.failed.block"),
     TRANSFORM_STATEMENT_INVALID_INPUT_OUTPUT("transform.statement.invalid.input.output"),
+    TRANSFORM_STATEMENT_EMPTY_BODY("transform.statement.empty.body"),
 
     // Cast and conversion related codes
     INCOMPATIBLE_TYPES_CAST("incompatible.types.cast"),
@@ -88,6 +90,8 @@ public enum DiagnosticCode {
     OPERATION_DOES_NOT_SUPPORT_FIELD_ACCESS("operation.does.not.support.field.access"),
     INVALID_INDEX_EXPR_STRUCT_FIELD_ACCESS("invalid.index.expr.struct.field.access"),
 
+    INVALID_NAMESPACE_PREFIX("invalid.namespace.prefix"),
+    XML_TAGS_MISMATCH("mismatching.xml.start.end.tags")
     ;
 
     private String value;
