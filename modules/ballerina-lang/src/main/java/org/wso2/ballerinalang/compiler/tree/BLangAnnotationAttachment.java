@@ -57,7 +57,7 @@ public class BLangAnnotationAttachment extends BLangNode implements AnnotationAt
     }
 
     @Override
-    public List<BLangAnnotAttachmentAttribute> geAttributes() {
+    public List<BLangAnnotAttachmentAttribute> getAttributes() {
         return attributes;
     }
 
