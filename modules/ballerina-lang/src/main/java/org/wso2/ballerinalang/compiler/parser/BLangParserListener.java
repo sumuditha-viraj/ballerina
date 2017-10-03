@@ -1133,9 +1133,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx) {
-        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream()
-                .anyMatch(child -> child instanceof ErrorNodeImpl);
-        if (!isValid) {
+        if (ctx.children.stream().anyMatch(child -> child instanceof ErrorNodeImpl)) {
             return;
         }
         this.pkgBuilder.addVariableDefStatement(getCurrentPos(ctx), getWS(ctx),
