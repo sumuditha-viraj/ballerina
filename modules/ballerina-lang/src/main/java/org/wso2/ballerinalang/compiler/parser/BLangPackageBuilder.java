@@ -574,7 +574,8 @@ public class BLangPackageBuilder {
         this.exprNodeListStack.push(new ArrayList<>());
     }
 
-    public void endExprNodeList(int exprCount) {
+    public void endExprNodeList(Set<Whitespace> ws, int exprCount) {
+        // TODO: capture WS, need to do exprList.addWS(ws) , but can't because it's a List
         List<ExpressionNode> exprList = exprNodeListStack.peek();
         addExprToExprNodeList(exprList, exprCount);
     }
@@ -1036,8 +1037,10 @@ public class BLangPackageBuilder {
 
     public void setAnnotationAttachmentName() {
         BLangNameReference nameReference = nameReferenceStack.pop();
-        annotAttachmentStack.peek().setAnnotationName(createIdentifier(nameReference.name.getValue()));
-        annotAttachmentStack.peek().setPackageAlias(createIdentifier(nameReference.pkgAlias.getValue()));
+        AnnotationAttachmentNode annotAttach = annotAttachmentStack.peek();
+        annotAttach.addWS(nameReference.ws);
+        annotAttach.setAnnotationName(nameReference.name);
+        annotAttach.setPackageAlias(nameReference.pkgAlias);
     }
 
     public void createLiteralTypeAttributeValue(DiagnosticPos currentPos, Set<Whitespace> ws) {
@@ -1535,6 +1538,10 @@ public class BLangPackageBuilder {
 
         Collections.reverse(expressions);
         return expressions;
+    }
+
+    public void endCompilationUnit(Set<Whitespace> ws) {
+        compUnit.addWS(ws);
     }
 
     public void endParameterList(Set<Whitespace> ws) {
