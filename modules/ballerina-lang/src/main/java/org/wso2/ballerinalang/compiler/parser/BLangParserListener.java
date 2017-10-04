@@ -88,6 +88,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitCompilationUnit(BallerinaParser.CompilationUnitContext ctx) {
+        this.pkgBuilder.endCompilationUnit(getWS(ctx));
     }
 
     /**
@@ -1133,9 +1134,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx) {
-        boolean isValid = ctx.ASSIGN() != null && !ctx.children.stream()
-                .anyMatch(child -> child instanceof ErrorNodeImpl);
-        if (!isValid) {
+        if (ctx.children.stream().anyMatch(child -> child instanceof ErrorNodeImpl)) {
             return;
         }
         this.pkgBuilder.addVariableDefStatement(getCurrentPos(ctx), getWS(ctx),
@@ -1196,7 +1195,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableReferenceList(BallerinaParser.VariableReferenceListContext ctx) {
-        this.pkgBuilder.endExprNodeList(ctx.getChildCount() / 2 + 1);
+        this.pkgBuilder.endExprNodeList(getWS(ctx), ctx.getChildCount() / 2 + 1);
     }
 
     /**
@@ -1559,7 +1558,8 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitExpressionList(BallerinaParser.ExpressionListContext ctx) {
-        this.pkgBuilder.endExprNodeList(ctx.getChildCount() / 2 + 1);
+        // TODO: capture WS
+        this.pkgBuilder.endExprNodeList(getWS(ctx), ctx.getChildCount() / 2 + 1);
     }
 
     @Override
