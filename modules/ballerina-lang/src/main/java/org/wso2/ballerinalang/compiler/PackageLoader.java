@@ -197,8 +197,4 @@ public class PackageLoader {
         this.loadExtensionRepository();
         return null;
     }
-
-    public Set<PackageID> listPackages() {
-        return this.packageRepo.listPackages();
-    }
 }
