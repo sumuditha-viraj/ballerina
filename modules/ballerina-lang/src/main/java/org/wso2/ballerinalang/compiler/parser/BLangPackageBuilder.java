@@ -62,6 +62,7 @@ import org.wso2.ballerinalang.compiler.tree.BLangFunction;
 import org.wso2.ballerinalang.compiler.tree.BLangIdentifier;
 import org.wso2.ballerinalang.compiler.tree.BLangImportPackage;
 import org.wso2.ballerinalang.compiler.tree.BLangNameReference;
+import org.wso2.ballerinalang.compiler.tree.BLangNode;
 import org.wso2.ballerinalang.compiler.tree.BLangPackageDeclaration;
 import org.wso2.ballerinalang.compiler.tree.BLangService;
 import org.wso2.ballerinalang.compiler.tree.BLangStruct;
@@ -574,7 +575,8 @@ public class BLangPackageBuilder {
         this.exprNodeListStack.push(new ArrayList<>());
     }
 
-    public void endExprNodeList(int exprCount) {
+    public void endExprNodeList(Set<Whitespace> ws, int exprCount) {
+        // TODO: capture WS, need to do exprList.addWS(ws) , but can't because it's a List
         List<ExpressionNode> exprList = exprNodeListStack.peek();
         addExprToExprNodeList(exprList, exprCount);
     }
@@ -1036,8 +1038,10 @@ public class BLangPackageBuilder {
 
     public void setAnnotationAttachmentName() {
         BLangNameReference nameReference = nameReferenceStack.pop();
-        annotAttachmentStack.peek().setAnnotationName(createIdentifier(nameReference.name.getValue()));
-        annotAttachmentStack.peek().setPackageAlias(createIdentifier(nameReference.pkgAlias.getValue()));
+        AnnotationAttachmentNode annotAttach = annotAttachmentStack.peek();
+        annotAttach.addWS(nameReference.ws);
+        annotAttach.setAnnotationName(nameReference.name);
+        annotAttach.setPackageAlias(nameReference.pkgAlias);
     }
 
     public void createLiteralTypeAttributeValue(DiagnosticPos currentPos, Set<Whitespace> ws) {
@@ -1255,15 +1259,17 @@ public class BLangPackageBuilder {
         transactionNode.setRetryCount(exprNodeStack.pop());
     }
 
-    public void addIfBlock(Set<Whitespace> ws) {
+    public void addIfBlock(DiagnosticPos pos, Set<Whitespace> ws) {
         IfNode ifNode = ifElseStatementStack.peek();
+        ((BLangIf)ifNode).pos = pos;
         ifNode.addWS(ws);
         ifNode.setCondition(exprNodeStack.pop());
         ifNode.setBody(blockNodeStack.pop());
     }
 
-    public void addElseIfBlock(Set<Whitespace> ws) {
+    public void addElseIfBlock(DiagnosticPos pos, Set<Whitespace> ws) {
         IfNode elseIfNode = ifElseStatementStack.pop();
+        ((BLangIf) elseIfNode).pos = pos;
         elseIfNode.setCondition(exprNodeStack.pop());
         elseIfNode.setBody(blockNodeStack.pop());
         Set<Whitespace> elseWS = removeFirst(ws);
@@ -1277,12 +1283,13 @@ public class BLangPackageBuilder {
         parentIfNode.setElseStatement(elseIfNode);
     }
 
-    public void addElseBlock(Set<Whitespace> ws) {
+    public void addElseBlock(DiagnosticPos pos, Set<Whitespace> ws) {
         IfNode ifNode = ifElseStatementStack.peek();
         while (ifNode.getElseStatement() != null) {
             ifNode = (IfNode) ifNode.getElseStatement();
         }
         BlockNode elseBlock = blockNodeStack.pop();
+        ((BLangNode)elseBlock).pos = pos;
         elseBlock.addWS(ws);
         ifNode.setElseStatement(elseBlock);
     }
@@ -1548,7 +1555,16 @@ public class BLangPackageBuilder {
         return expressions;
     }
 
+
     public void endCallableParamList(Set<Whitespace> ws) {
+        this.invokableNodeStack.peek().addWS(ws);
+    }
+
+    public void endCompilationUnit(Set<Whitespace> ws) {
+        compUnit.addWS(ws);
+    }
+
+    public void endParameterList(Set<Whitespace> ws) {
         this.invokableNodeStack.peek().addWS(ws);
     }
 

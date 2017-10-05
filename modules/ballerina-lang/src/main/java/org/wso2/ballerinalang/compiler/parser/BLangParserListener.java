@@ -20,6 +20,7 @@ package org.wso2.ballerinalang.compiler.parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
+import org.antlr.v4.runtime.tree.ErrorNodeImpl;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -64,6 +65,9 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitParameter(BallerinaParser.ParameterContext ctx) {
+        if (ctx.exception != null) {
+            return;
+        }
         this.pkgBuilder.addVar(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
                 false, ctx.annotationAttachment().size());
     }
@@ -84,6 +88,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitCompilationUnit(BallerinaParser.CompilationUnitContext ctx) {
+        this.pkgBuilder.endCompilationUnit(getWS(ctx));
     }
 
     /**
@@ -1129,10 +1134,13 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableDefinitionStatement(BallerinaParser.VariableDefinitionStatementContext ctx) {
+        if (ctx.children.stream().anyMatch(child -> child instanceof ErrorNodeImpl)) {
+            return;
+        }
         this.pkgBuilder.addVariableDefStatement(getCurrentPos(ctx), getWS(ctx),
                 ctx.Identifier().getText(), ctx.ASSIGN() != null);
     }
-
+    
     @Override
     public void enterMapStructLiteral(BallerinaParser.MapStructLiteralContext ctx) {
         this.pkgBuilder.startMapStructLiteral();
@@ -1187,7 +1195,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitVariableReferenceList(BallerinaParser.VariableReferenceListContext ctx) {
-        this.pkgBuilder.endExprNodeList(ctx.getChildCount() / 2 + 1);
+        this.pkgBuilder.endExprNodeList(getWS(ctx), ctx.getChildCount() / 2 + 1);
     }
 
     /**
@@ -1226,7 +1234,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitIfClause(BallerinaParser.IfClauseContext ctx) {
-        this.pkgBuilder.addIfBlock(getWS(ctx));
+        this.pkgBuilder.addIfBlock(getCurrentPos(ctx), getWS(ctx));
     }
 
     /**
@@ -1247,7 +1255,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitElseIfClause(BallerinaParser.ElseIfClauseContext ctx) {
-        this.pkgBuilder.addElseIfBlock(getWS(ctx));
+        this.pkgBuilder.addElseIfBlock(getCurrentPos(ctx), getWS(ctx));
     }
 
     /**
@@ -1267,7 +1275,7 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitElseClause(BallerinaParser.ElseClauseContext ctx) {
-        this.pkgBuilder.addElseBlock(getWS(ctx));
+        this.pkgBuilder.addElseBlock(getCurrentPos(ctx), getWS(ctx));
     }
 
     /**
@@ -1552,7 +1560,8 @@ public class BLangParserListener extends BallerinaParserBaseListener {
 
     @Override
     public void exitExpressionList(BallerinaParser.ExpressionListContext ctx) {
-        this.pkgBuilder.endExprNodeList(ctx.getChildCount() / 2 + 1);
+        // TODO: capture WS
+        this.pkgBuilder.endExprNodeList(getWS(ctx), ctx.getChildCount() / 2 + 1);
     }
 
     @Override
@@ -1975,9 +1984,12 @@ public class BLangParserListener extends BallerinaParserBaseListener {
      */
     @Override
     public void exitFieldDefinition(BallerinaParser.FieldDefinitionContext ctx) {
+        if (ctx.exception != null) {
+            return;
+        }
         if (ctx.parent instanceof BallerinaParser.StructBodyContext) {
-        this.pkgBuilder.addVarToStruct(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
-                ctx.simpleLiteral() != null, 0);
+            this.pkgBuilder.addVarToStruct(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
+                    ctx.simpleLiteral() != null, 0);
         } else if (ctx.parent instanceof BallerinaParser.AnnotationBodyContext) {
             this.pkgBuilder.addVarToAnnotation(getCurrentPos(ctx), getWS(ctx), ctx.Identifier().getText(),
                     ctx.simpleLiteral() != null, 0);

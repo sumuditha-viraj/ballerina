@@ -76,17 +76,18 @@ public class Compiler {
         this.compilerPhase = getCompilerPhase();
     }
 
-    public void compile(String sourcePkg) {
+    public BLangPackage compile(String sourcePkg) {
         loadBuiltInPackage();
+        BLangPackage bLangPackage = null;
         switch (compilerPhase) {
             case DEFINE:
-                define(sourcePkg);
+                bLangPackage = define(sourcePkg);
                 break;
             case TYPE_CHECK:
-                typeCheck(define(sourcePkg));
+                bLangPackage = typeCheck(define(sourcePkg));
                 break;
             case CODE_ANALYZE:
-                codeAnalyze(typeCheck(define(sourcePkg)));
+                bLangPackage = codeAnalyze(typeCheck(define(sourcePkg)));
                 break;
             case DESUGAR:
                 desugar(codeAnalyze(typeCheck(define(sourcePkg))));
@@ -95,6 +96,8 @@ public class Compiler {
                 gen(desugar(codeAnalyze(typeCheck(define(sourcePkg)))));
                 break;
         }
+
+        return bLangPackage;
     }
 
     private void loadBuiltInPackage() {
